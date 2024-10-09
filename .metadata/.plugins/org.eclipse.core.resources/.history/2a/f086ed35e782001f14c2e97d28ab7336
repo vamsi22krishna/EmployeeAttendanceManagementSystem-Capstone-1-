@@ -1,0 +1,30 @@
+package com.attendencemanagementsystem.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.attendencemanagementsystem.entity.UserLogin;
+
+public interface UserLoginRepository extends JpaRepository<UserLogin, String> {
+	@Query("SELECT u FROM UserLogin u WHERE u.userEmail = :email")
+    Optional<UserLogin> findByEmail(@Param("email") String email);
+	
+	 @Query("SELECT ul FROM UserLogin ul WHERE ul.userEmail = :userEmail AND ul.password = :password")
+	    UserLogin findByUserEmailAndPassword(@Param("userEmail") String userEmail, @Param("password") String password);
+
+	  @Query("SELECT u.userInfo.userId FROM UserLogin u WHERE u.loginId = :loginId")
+	    String findUserIdByLoginId(@Param("loginId") String loginId);
+	  
+	  
+	  @Query("SELECT u.userInfo.userId FROM UserLogin u WHERE u.userInfo.manager.userId = :managerId")
+	    List<String> findEmployeesByManagerId(@Param("managerId") String managerId);
+	  
+	  boolean existsByUserEmail(String email);
+	  
+	  
+}
+

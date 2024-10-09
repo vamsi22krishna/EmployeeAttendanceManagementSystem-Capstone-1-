@@ -1,0 +1,117 @@
+package com.attendencemanagementsystem.controller;
+
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.service.UserLoginService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(UserLoginController.class)
+public class UserLoginControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserLoginService userLoginService;
+
+    @Test
+    public void testCreateUserLogin() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password");
+
+        Mockito.when(userLoginService.createUserLogin(Mockito.any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(post("/api/userlogin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userEmail\":\"john.doe@example.com\",\"password\":\"password\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail", is("john.doe@example.com")))
+                .andExpect(jsonPath("$.password", is("password")));
+    }
+
+    @Test
+    public void testGetUserLoginById() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password");
+
+        Mockito.when(userLoginService.getUserLoginById("1")).thenReturn(userLoginDto);
+
+        mockMvc.perform(get("/api/userlogin/1")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail", is("john.doe@example.com")))
+                .andExpect(jsonPath("$.password", is("password")));
+    }
+
+    @Test
+    public void testUpdateUserLogin() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("newpassword");
+
+        Mockito.when(userLoginService.updateUserLogin(Mockito.eq("1"), Mockito.any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(put("/api/userlogin/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userEmail\":\"john.doe@example.com\",\"password\":\"newpassword\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail", is("john.doe@example.com")))
+                .andExpect(jsonPath("$.password", is("newpassword")));
+    }
+
+    @Test
+    public void testDeleteUserLogin() throws Exception {
+        Mockito.doNothing().when(userLoginService).deleteUserLogin("1");
+
+        mockMvc.perform(delete("/api/userlogin/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testLogin() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password");
+
+        Mockito.when(userLoginService.login1(Mockito.any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(post("/api/userlogin/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userEmail\":\"john.doe@example.com\",\"password\":\"password\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail", is("john.doe@example.com")))
+                .andExpect(jsonPath("$.password", is("password")));
+    }
+
+    @Test
+    public void testCheckEmailExists() throws Exception {
+        Mockito.when(userLoginService.emailExists("john.doe@example.com")).thenReturn(true);
+
+        mockMvc.perform(get("/api/userlogin/exists/john.doe@example.com")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", is(true)));
+    }
+
+    @Test
+    public void testChangePassword() throws Exception {
+        Mockito.doNothing().when(userLoginService).changePassword("john.doe@example.com", "newpassword");
+
+        mockMvc.perform(post("/api/userlogin/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"john.doe@example.com\",\"newPassword\":\"newpassword\"}"))
+                .andExpect(status().isOk());
+    }
+}
+

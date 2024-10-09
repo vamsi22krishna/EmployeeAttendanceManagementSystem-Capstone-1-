@@ -1,0 +1,220 @@
+package com.attendencemanagementsystem.controller;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.service.UserInfoService;
+import com.attendencemanagementsystem.service.UserLoginService;
+import com.attendencemanagementsystem.service.UserRoleService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(UserInfoController.class)
+public class UserInfoControllerTest {
+
+    @InjectMocks
+    private UserInfoController userInfoController;
+
+    @MockBean
+    private UserInfoService userInfoService;
+
+    @MockBean
+    private UserRoleService userRoleService;
+
+    @MockBean
+    private UserLoginService userLoginService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(userInfoController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateUserInfo() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+        userInfoDto.setAddress("123 Main St");
+        userInfoDto.setSalary(50000.0f);
+        userInfoDto.setDOB(new java.sql.Date(System.currentTimeMillis()));
+
+        when(userInfoService.createUserInfo(any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        mockMvc.perform(post("/api/userinfo")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userInfoDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testGetUserInfoById() throws Exception {
+        String userId = "UI123";
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setUserId(userId);
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.getUserInfoById(userId)).thenReturn(userInfoDto);
+
+        mockMvc.perform(get("/api/userinfo/{userId}", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testUpdateUserInfo() throws Exception {
+        String userId = "UI123";
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.updateUserInfo(eq(userId), any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        mockMvc.perform(put("/api/userinfo/{userId}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userInfoDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testDeleteUserInfo() throws Exception {
+        String userId = "UI123";
+
+        doNothing().when(userInfoService).deleteUserInfo(userId);
+
+        mockMvc.perform(delete("/api/userinfo/{userId}", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testGetUserProfile() throws Exception {
+        String loginId = "UL123";
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setUserId("UI123");
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.getUserProfile(loginId)).thenReturn(userInfoDto);
+
+        mockMvc.perform(get("/api/userinfo/profile/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value("UI123"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testAddManager() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.createUserInfo(any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        mockMvc.perform(post("/api/userinfo/add-manager")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userInfoDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testCreateHRInfo() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.createHrInfo(any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        mockMvc.perform(post("/api/userinfo/add-hr")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userInfoDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testAddEmployee() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setLoginId("UL123");
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password123");
+
+        when(userInfoService.createUserInfo1(any(UserInfoDto.class))).thenReturn(userInfoDto);
+        when(userLoginService.createUserLogin(any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(post("/api/userinfo/add-employee")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userInfoDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testGetManagers() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.getManagers()).thenReturn(List.of(userInfoDto));
+
+        mockMvc.perform(get("/api/userinfo/managers")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    public void testGetHRs() throws Exception {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        when(userInfoService.getHRs()).thenReturn(List.of(userInfoDto));
+
+        mockMvc.perform(get("/api/userinfo/hrs")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+}

@@ -1,0 +1,153 @@
+package com.attendencemanagementsystem.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.LeaveBalanceDto;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(LeaveBalanceController.class)
+public class LeaveBalanceControllerTest {
+
+    @InjectMocks
+    private LeaveBalanceController leaveBalanceController;
+
+    @MockBean
+    private LeaveBalanceService leaveBalanceService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(leaveBalanceController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateLeaveBalance() throws Exception {
+        LeaveBalanceDto leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setLoginId("UL123");
+
+        doNothing().when(leaveBalanceService).createLeaveBalancesForUser(anyString());
+
+        mockMvc.perform(post("/api/leavebalances/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(leaveBalanceDto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testGetAllLeaveBalances() throws Exception {
+        LeaveBalanceDto leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setLoginId("UL123");
+        leaveBalanceDto.setLeaveTypeId("LT123");
+        leaveBalanceDto.setTotalLeaves(30);
+        leaveBalanceDto.setUsedLeaves(5.0);
+
+        when(leaveBalanceService.getAllLeaveBalances()).thenReturn(List.of(leaveBalanceDto));
+
+        mockMvc.perform(get("/api/leavebalances")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.leaveTypeId").value("LT123"))
+                .andExpect(jsonPath("$.totalLeaves").value(30))
+                .andExpect(jsonPath("$.usedLeaves").value(5.0));
+    }
+
+    @Test
+    public void testGetLeaveBalanceById() throws Exception {
+        String balanceId = "LB123";
+        LeaveBalanceDto leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setBalanceId(balanceId);
+        leaveBalanceDto.setLoginId("UL123");
+        leaveBalanceDto.setLeaveTypeId("LT123");
+        leaveBalanceDto.setTotalLeaves(30);
+        leaveBalanceDto.setUsedLeaves(5.0);
+
+        when(leaveBalanceService.getLeaveBalanceById(balanceId)).thenReturn(leaveBalanceDto);
+
+        mockMvc.perform(get("/api/leavebalances/{balanceId}", balanceId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balanceId").value(balanceId))
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.leaveTypeId").value("LT123"))
+                .andExpect(jsonPath("$.totalLeaves").value(30))
+                .andExpect(jsonPath("$.usedLeaves").value(5.0));
+    }
+
+    @Test
+    public void testUpdateLeaveBalance() throws Exception {
+        String balanceId = "LB123";
+        LeaveBalanceDto leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setBalanceId(balanceId);
+        leaveBalanceDto.setLoginId("UL123");
+        leaveBalanceDto.setLeaveTypeId("LT123");
+        leaveBalanceDto.setTotalLeaves(30);
+        leaveBalanceDto.setUsedLeaves(5.0);
+
+        when(leaveBalanceService.updateLeaveBalance(eq(balanceId), any(LeaveBalanceDto.class))).thenReturn(leaveBalanceDto);
+
+        mockMvc.perform(put("/api/leavebalances/{balanceId}", balanceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(leaveBalanceDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balanceId").value(balanceId))
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.leaveTypeId").value("LT123"))
+                .andExpect(jsonPath("$.totalLeaves").value(30))
+                .andExpect(jsonPath("$.usedLeaves").value(5.0));
+    }
+
+    @Test
+    public void testDeleteLeaveBalance() throws Exception {
+        String balanceId = "LB123";
+
+        doNothing().when(leaveBalanceService).deleteLeaveBalance(balanceId);
+
+        mockMvc.perform(delete("/api/leavebalances/{balanceId}", balanceId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testGetLeaveBalance() throws Exception {
+        String loginId = "UL123";
+        String leaveTypeId = "LT123";
+        LeaveBalanceDto leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setLoginId(loginId);
+        leaveBalanceDto.setLeaveTypeId(leaveTypeId);
+        leaveBalanceDto.setTotalLeaves(30);
+        leaveBalanceDto.setUsedLeaves(5.0);
+
+        when(leaveBalanceService.getLeaveBalance(loginId, leaveTypeId)).thenReturn(leaveBalanceDto);
+
+        mockMvc.perform(get("/api/leavebalances/{loginId}/{leaveTypeId}", loginId, leaveTypeId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value(loginId))
+                .andExpect(jsonPath("$.leaveTypeId").value(leaveTypeId))
+                .andExpect(jsonPath("$.totalLeaves").value(30))
+                .andExpect(jsonPath("$.usedLeaves").value(5.0));
+    }
+}

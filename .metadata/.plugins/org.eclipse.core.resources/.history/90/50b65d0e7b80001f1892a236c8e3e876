@@ -1,0 +1,27 @@
+package com.attendencemanagementsystem.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.sql.Timestamp;
+
+@Data
+@NoArgsConstructor
+public class LeaveRequestDto {
+    private String leaveId;
+    private String loginId;
+    private String leaveTypeId;
+    private Timestamp startDate;
+    private Timestamp endDate;
+    private String halfDay;
+    private String status;
+    private String reason;
+    private String leaveTypeName; 
+    
+    private String firstName;
+    private String lastName;
+    
+    private String startSession;
+    private String endSession;
+    
+}
+

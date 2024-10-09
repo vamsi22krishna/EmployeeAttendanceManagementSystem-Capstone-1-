@@ -1,0 +1,17 @@
+package com.attendencemanagementsystem.dto;
+
+import java.util.List;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class UserLoginDto {
+    private String loginId;
+    private String userId;
+    private String userEmail;
+    private String password;
+//    private List<String> roles;
+    private String roles;
+}

@@ -1,0 +1,33 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class AttendanceReportService {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    public List<AttendanceReportDto> generateAttendanceReport() {
+        List<UserInfo> employees = userInfoRepository.findAll();
+        List<Attendance> attendanceRecords = attendanceRepository.findAll();
+
+        Map<String, List<Attendance>> attendanceByEmployee = attendanceRecords.stream()
+                .collect(Collectors.groupingBy(att -> att.getUserLogin().getUserInfo().getUserId()));
+
+        return employees.stream().map(employee -> {
+            List<Attendance> employeeAttendance = attendanceByEmployee.getOrDefault(employee.getUserId(), List.of());
+            long daysPresent = employeeAttendance.stream().filter(att -> "P".equals(att.getStatus())).count();
+            long daysAbsent = employeeAttendance.stream().filter(att -> "A".equals(att.getStatus())).count();
+            return new AttendanceReportDto(employee.getFirstName(), employee.getLastName(), daysPresent, daysAbsent);
+        }).collect(Collectors.toList());
+    }
+}

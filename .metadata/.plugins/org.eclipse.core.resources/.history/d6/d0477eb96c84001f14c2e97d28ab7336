@@ -1,0 +1,42 @@
+package com.attendencemanagementsystem.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+@SpringBootTest
+public class AttendanceCorrectionTest {
+
+    private AttendanceCorrection attendanceCorrection;
+
+    @MockBean
+    private UserLogin userLogin;
+
+    @MockBean
+    private Attendance attendance;
+
+    @BeforeEach
+    public void setUp() {
+        attendanceCorrection = new AttendanceCorrection();
+        attendanceCorrection.setUserLogin(userLogin);
+        attendanceCorrection.setAttendance(attendance);
+        attendanceCorrection.setCorrectionReason("Incorrect check-in time");
+        attendanceCorrection.setStatus("Pending");
+    }
+
+    @Test
+    public void testGenerateId() {
+        attendanceCorrection.generateId();
+        assertThat(attendanceCorrection.getCorrectionId()).isNotNull();
+        assertThat(attendanceCorrection.getCorrectionId()).startsWith("AC");
+    }
+
+    @Test
+    public void testAttendanceCorrectionFields() {
+        assertThat(attendanceCorrection.getUserLogin()).isEqualTo(userLogin);
+        assertThat(attendanceCorrection.getAttendance()).isEqualTo(attendance);
+        assertThat(attendanceCorrection.getCorrectionReason()).isEqualTo("Incorrect check-in time");
+        assertThat(attendanceCorrection.getStatus()).isEqualTo("Pending");
+    }
+}

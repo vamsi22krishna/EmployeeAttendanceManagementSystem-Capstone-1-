@@ -1,0 +1,5 @@
+package com.attendencemanagementsystem.repository;
+
+public class role {
+
+}

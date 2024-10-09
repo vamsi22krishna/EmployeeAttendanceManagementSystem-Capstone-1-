@@ -1,0 +1,103 @@
+package com.attendencemanagementsystem.controller;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+import com.attendencemanagementsystem.service.UserRoleService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(UserRoleController.class)
+public class UserRoleControllerTest {
+
+    @InjectMocks
+    private UserRoleController userRoleController;
+
+    @MockBean
+    private UserRoleService userRoleService;
+
+    @MockBean
+    private LeaveBalanceService leaveBalanceService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(userRoleController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateUserRole() throws Exception {
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId("UL123");
+        userRoleDto.setRole("Admin");
+
+        when(userRoleService.createUserRole(any(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        mockMvc.perform(post("/api/user-roles/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userRoleDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.role").value("Admin"));
+    }
+
+    @Test
+    public void testGetUserRoleById() throws Exception {
+        String userRoleId = "UR123";
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setUserRoleId(userRoleId);
+        userRoleDto.setRole("Admin");
+
+        when(userRoleService.getUserRoleById(userRoleId)).thenReturn(userRoleDto);
+
+        mockMvc.perform(get("/api/user-roles/{userRoleId}", userRoleId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userRoleId").value(userRoleId))
+                .andExpect(jsonPath("$.role").value("Admin"));
+    }
+
+    @Test
+    public void testUpdateUserRole() throws Exception {
+        String userRoleId = "UR123";
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setRole("User");
+
+        when(userRoleService.updateUserRole(eq(userRoleId), any(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        mockMvc.perform(put("/api/user-roles/{userRoleId}", userRoleId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userRoleDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("User"));
+    }
+
+    @Test
+    public void testDeleteUserRole() throws Exception {
+        String userRoleId = "UR123";
+
+        doNothing().when(userRoleService).deleteUserRole(userRoleId);
+
+        mockMvc.perform(delete("/api/user-roles/{userRoleId}", userRoleId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+}

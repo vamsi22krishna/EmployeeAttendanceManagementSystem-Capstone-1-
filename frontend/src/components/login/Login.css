@@ -1,0 +1,56 @@
+/* Login.css */
+.login-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100vh;
+  padding: 0 60px;
+  
+
+}
+
+.login-paper {
+  width: 45%;
+  height:70%;
+  padding: 80px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+.login-paper h4 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.login-paper .MuiTextField-root {
+  margin-bottom: 20px;
+}
+
+.login-paper .MuiButton-root {
+  margin-top: 20px;
+}
+
+.login-image {
+  width: 45%;
+  height: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.login-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.login-button:hover {
+  background-color: #0056b3;
+}

@@ -1,0 +1,27 @@
+package com.attendencemanagementsystem.service;
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+
+//public interface UserInfoService {
+//    UserInfoDto createUserInfo(UserInfoDto userInfoDto);
+//    UserInfoDto getUserInfoById(String userId);
+//    UserInfoDto updateUserInfo(String userId, UserInfoDto userInfoDto);
+//    void deleteUserInfo(String userId);
+//}
+
+
+public interface UserInfoService {
+    UserInfoDto createUserInfo(UserInfoDto userInfoDto);
+    UserInfoDto getUserInfoById(String userId);
+    UserInfoDto updateUserInfo(String userId, UserInfoDto userInfoDto);
+    void deleteUserInfo(String userId);
+    UserInfoDto getUserInfoByEmail(String userEmail);
+    public List<UserInfoDto> getAllUsers();
+    public List<UserInfoDto> getAllManagers();
+    public UserInfoDto createUserInfo1(UserInfoDto userInfoDto);
+    public UserInfoDto createHrInfo(UserInfoDto userInfoDto);
+    public UserInfo addEmployee(UserInfoDto userInfoDTO);
+}

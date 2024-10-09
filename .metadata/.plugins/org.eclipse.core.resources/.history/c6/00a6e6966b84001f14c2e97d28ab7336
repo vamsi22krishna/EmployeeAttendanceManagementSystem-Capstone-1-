@@ -1,0 +1,40 @@
+package com.attendencemanagementsystem.entity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+@SpringBootTest
+public class UserLoginTest {
+
+    @Autowired
+    private UserLogin userLogin;
+
+    @MockBean
+    private UserInfo userInfo;
+
+    @BeforeEach
+    public void setUp() {
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+    }
+
+    @Test
+    public void testGenerateId() {
+        userLogin.generateId();
+        assertThat(userLogin.getLoginId()).isNotNull();
+        assertThat(userLogin.getLoginId()).startsWith("UL");
+    }
+
+    @Test
+    public void testUserLoginFields() {
+        assertThat(userLogin.getUserEmail()).isEqualTo("john.doe@example.com");
+        assertThat(userLogin.getPassword()).isEqualTo("password123");
+        assertThat(userLogin.getUserInfo()).isEqualTo(userInfo);
+    }
+}

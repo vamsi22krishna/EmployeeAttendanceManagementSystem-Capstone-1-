@@ -1,0 +1,71 @@
+package com.attendencemanagementsystem.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.service.AttendanceService;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/attendance")
+public class AttendanceController {
+
+    @Autowired
+    private AttendanceService attendanceService;
+    
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+    
+    @PostMapping
+    public ResponseEntity<AttendanceDto> createAttendance(@RequestBody AttendanceDto attendanceDto) {
+        return ResponseEntity.ok(attendanceService.createAttendance(attendanceDto));
+    }
+
+    @GetMapping("/{attendanceId}")
+    public ResponseEntity<AttendanceDto> getAttendanceById(@PathVariable String attendanceId) {
+        return ResponseEntity.ok(attendanceService.getAttendanceById(attendanceId));
+    }
+
+    @PutMapping("/{attendanceId}")
+    public ResponseEntity<AttendanceDto> updateAttendance(@PathVariable String attendanceId, @RequestBody AttendanceDto attendanceDto) {
+        return ResponseEntity.ok(attendanceService.updateAttendance(attendanceId, attendanceDto));
+    }
+
+    @DeleteMapping("/{attendanceId}")
+    public ResponseEntity<Void> deleteAttendance(@PathVariable String attendanceId) {
+        attendanceService.deleteAttendance(attendanceId);
+        return ResponseEntity.noContent().build();
+    }
+    
+    
+    @PostMapping("/check-in/{loginId}")
+    public AttendanceDto checkIn(@PathVariable String loginId) {
+        return attendanceService.logCheckIn(loginId);
+    }
+
+
+    @PostMapping("/check-out/{loginId}")
+    public AttendanceDto checkOut(@PathVariable String loginId) {
+        return attendanceService.logCheckOut(loginId);
+    }
+
+    @GetMapping("/records/{loginId}")
+    public List<AttendanceDto> getAttendanceRecords(@PathVariable String loginId) {
+        return attendanceService.getAttendanceRecords(loginId);
+    }
+    
+//    @GetMapping("/manager/{managerId}")
+//    public ResponseEntity<List<AttendanceDto>> getAttendanceByManager(@PathVariable String managerId) {
+//        List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceByManager(managerId);
+//        return ResponseEntity.ok(attendanceRecords);
+//    }
+    @GetMapping("/attendance/manager/{managerId}")
+    public ResponseEntity<List<AttendanceDto>> getAttendanceRecordsByManager(@PathVariable String managerId) {
+        List<AttendanceDto> records = attendanceRepository.findAttendanceRecordsByManager(managerId);
+        return ResponseEntity.ok(records);
+    }
+}

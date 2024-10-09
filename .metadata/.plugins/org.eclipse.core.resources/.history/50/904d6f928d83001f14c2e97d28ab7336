@@ -1,0 +1,151 @@
+package com.attendencemanagementsystem.controller;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.service.UserInfoService;
+import com.attendencemanagementsystem.service.UserLoginService;
+import com.attendencemanagementsystem.service.UserRoleService;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/userinfo")
+public class UserInfoController {
+
+    @Autowired
+    private UserInfoService userInfoService;
+    
+    @Autowired
+    private UserRoleService userRoleService;
+
+    @Autowired
+    private UserLoginService userLoginService;
+    
+    @PostMapping
+    public ResponseEntity<UserInfoDto> createUserInfo(@RequestBody UserInfoDto userInfoDto) {
+        return ResponseEntity.ok(userInfoService.createUserInfo(userInfoDto));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserInfoDto> getUserInfoById(@PathVariable String userId) {
+        return ResponseEntity.ok(userInfoService.getUserInfoById(userId));
+    }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserInfoDto> updateUserInfo(@PathVariable String userId, @RequestBody UserInfoDto userInfoDto) {
+        return ResponseEntity.ok(userInfoService.updateUserInfo(userId, userInfoDto));
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUserInfo(@PathVariable String userId) {
+        userInfoService.deleteUserInfo(userId);
+        return ResponseEntity.noContent().build();
+    }
+    
+//    @GetMapping("/profile/{userEmail}")
+//    public ResponseEntity<UserInfoDto> getUserInfoByEmail(@PathVariable String userEmail) {
+//        UserInfoDto userInfoDto = userInfoService.getUserInfoByEmail(userEmail);
+//        return ResponseEntity.ok(userInfoDto);
+//    }
+    
+    
+    
+    
+    
+    
+//    @GetMapping("/managers")
+//    public ResponseEntity<List<UserInfoDto>> getManagers() {
+//        List<UserInfo> managers = userInfoService.getAllManagers();
+//        List<UserInfoDto> managerDtos = managers.stream()
+//                .map(manager -> modelMapper.map(manager, UserInfoDto.class))
+//                .collect(Collectors.toList());
+//        return ResponseEntity.ok(managerDtos);
+//    }
+    @PostMapping("/add-manager")
+    public ResponseEntity<UserInfoDto> addManager(@RequestBody UserInfoDto userInfoDto) {
+        // Create the manager user info
+        UserInfoDto createdUser = userInfoService.createUserInfo(userInfoDto);
+
+        // Create the employee role
+        UserRoleDto employeeRole = new UserRoleDto();
+        employeeRole.setLoginId(createdUser.getUserId());
+        employeeRole.setRole("Employee");
+        userRoleService.createUserRole(employeeRole);
+        
+        // Create the manager role
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId(createdUser.getUserId());
+        userRoleDto.setRole("Manager");
+        userRoleService.createUserRole(userRoleDto);
+
+        return ResponseEntity.ok(createdUser);
+    }
+
+    @PostMapping("/add-hr")
+    public ResponseEntity<UserInfoDto> createHRInfo(@RequestBody UserInfoDto userInfoDto) {
+        return ResponseEntity.ok(userInfoService.createHrInfo(userInfoDto));
+    }
+    
+//    @PostMapping("/add-employee")
+//    public ResponseEntity<UserInfoDto> addEmployee(@RequestBody UserInfoDto userInfoDto) {
+//        // Create the manager user info
+//        UserInfoDto createdUser = userInfoService.createUserInfo(userInfoDto);
+//
+//        // Create the employee role
+//        UserRoleDto employeeRole = new UserRoleDto();
+//        employeeRole.setLoginId(createdUser.getUserId());
+//        employeeRole.setRole("Employee");
+//        userRoleService.createUserRole(employeeRole);
+//        
+//        return ResponseEntity.ok(createdUser);
+//    }
+    
+    @PostMapping("/add-employee")
+    public ResponseEntity<UserInfoDto> addEmployee(@RequestBody UserInfoDto userInfoDto) {
+        // Step 1: Create UserInfo
+        UserInfoDto createdUser = userInfoService.createUserInfo1(userInfoDto);
+
+        // Step 2: Create UserLogin
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail(userInfoDto.getUserEmail()); // Corrected: Use userLoginDto for email and password
+        userLoginDto.setPassword(userInfoDto.getPassword()); // Corrected: Use userLoginDto for email and password
+        userLoginDto.setUserId(createdUser.getUserId());
+        UserLoginDto createdLogin = userLoginService.createUserLogin(userLoginDto);
+
+        // Step 3: Assign Role as "Employee"
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId(createdLogin.getLoginId());
+        userRoleDto.setRole("Employee");
+        userRoleService.createUserRole(userRoleDto);
+
+        return ResponseEntity.ok(createdUser);
+    }
+    @PostMapping("/add")
+    public ResponseEntity<UserInfo> addEmployees(@RequestBody UserInfoDto userInfoDTO) {
+        UserInfo savedUser = userInfoService.addEmployee(userInfoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+    }
+    
+   
+    
+    @GetMapping("/managers")
+    public ResponseEntity<List<UserInfoDto>> getManagers() {
+        List<UserInfoDto> managers = userInfoService.getManagers();
+        return ResponseEntity.ok(managers);
+    }
+
+    @GetMapping("/hrs")
+    public ResponseEntity<List<UserInfoDto>> getHRs() {
+        List<UserInfoDto> hrs = userInfoService.getHRs();
+        return ResponseEntity.ok(hrs);
+    }
+
+}

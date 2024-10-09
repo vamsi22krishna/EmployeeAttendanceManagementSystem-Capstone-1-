@@ -1,0 +1,46 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+
+import com.attendencemanagementsystem.entity.LeaveTypes;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class LeaveTypesRepositoryTest {
+
+    @Autowired
+    private LeaveTypesRepository leaveTypesRepository;
+
+    private LeaveTypes leaveType;
+
+    @BeforeEach
+    public void setUp() {
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveType("Annual Leave");
+        leaveType.setMaxLeaves(30);
+        leaveType = leaveTypesRepository.save(leaveType);
+    }
+
+    @Test
+    public void testExistsByLeaveType() {
+        boolean exists = leaveTypesRepository.existsByLeaveType("Annual Leave");
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    public void testFindByLeaveType() {
+        LeaveTypes foundLeaveType = leaveTypesRepository.findByLeaveType("Annual Leave");
+        assertThat(foundLeaveType).isNotNull();
+        assertThat(foundLeaveType.getLeaveType()).isEqualTo("Annual Leave");
+        assertThat(foundLeaveType.getMaxLeaves()).isEqualTo(30);
+    }
+}

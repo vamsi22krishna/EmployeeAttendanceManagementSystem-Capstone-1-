@@ -1,0 +1,22 @@
+package com.attendencemanagementsystem.service;
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.entity.LeaveRequest;
+
+public interface LeaveRequestService {
+    LeaveRequestDto createLeaveRequest(LeaveRequestDto leaveRequestDto);
+    LeaveRequestDto getLeaveRequestById(String leaveId);
+    LeaveRequestDto updateLeaveRequest(String leaveId, LeaveRequestDto leaveRequestDto);
+    void deleteLeaveRequest(String leaveId);
+	//LeaveRequestDto submitLeaveRequest(LeaveRequestDto leaveRequestDto);
+    public LeaveRequest submitLeaveRequest(LeaveRequestDto leaveRequestDTO, String loginId);
+    List<LeaveRequestDto> getLeaveRequestsByUser(String loginId);
+	List<LeaveRequestDto> getLeaveRequestsByManager(String managerId);
+//	LeaveRequestDto approveLeaveRequest(String leaveId);
+	//LeaveRequestDto rejectLeaveRequest(String leaveId);
+	 public LeaveRequest approveLeaveRequest(String leaveId);
+	 public void rejectLeaveRequest(String leaveId);
+	 public List<LeaveRequestDto> getPendingLeaveRequestsByManager(String managerId);
+}

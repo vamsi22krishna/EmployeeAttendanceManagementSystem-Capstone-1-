@@ -1,0 +1,113 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+
+import com.attendencemanagementsystem.dto.LeaveTypesDto;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+
+public class LeaveTypesServiceImplTest {
+
+    @InjectMocks
+    private LeaveTypesServiceImpl leaveTypesService;
+
+    @Mock
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private LeaveTypes leaveType;
+    private LeaveTypesDto leaveTypesDto;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveTypeId("LT123");
+        leaveType.setLeaveType("Annual Leave");
+        leaveType.setMaxLeaves(30);
+
+        leaveTypesDto = new LeaveTypesDto();
+        leaveTypesDto.setLeaveTypeId("LT123");
+        leaveTypesDto.setLeaveType("Annual Leave");
+        leaveTypesDto.setMaxLeaves(30);
+    }
+
+    @Test
+    public void testCreateLeaveType() {
+        when(modelMapper.map(any(LeaveTypesDto.class), eq(LeaveTypes.class))).thenReturn(leaveType);
+        when(leaveTypesRepository.save(any(LeaveTypes.class))).thenReturn(leaveType);
+        when(modelMapper.map(any(LeaveTypes.class), eq(LeaveTypesDto.class))).thenReturn(leaveTypesDto);
+
+        LeaveTypesDto createdLeaveType = leaveTypesService.createLeaveType(leaveTypesDto);
+
+        assertThat(createdLeaveType).isNotNull();
+        assertThat(createdLeaveType.getLeaveType()).isEqualTo("Annual Leave");
+        assertThat(createdLeaveType.getMaxLeaves()).isEqualTo(30);
+    }
+
+    @Test
+    public void testGetLeaveTypeById() {
+        when(leaveTypesRepository.findById("LT123")).thenReturn(Optional.of(leaveType));
+        when(modelMapper.map(any(LeaveTypes.class), eq(LeaveTypesDto.class))).thenReturn(leaveTypesDto);
+
+        LeaveTypesDto foundLeaveType = leaveTypesService.getLeaveTypeById("LT123");
+
+        assertThat(foundLeaveType).isNotNull();
+        assertThat(foundLeaveType.getLeaveType()).isEqualTo("Annual Leave");
+        assertThat(foundLeaveType.getMaxLeaves()).isEqualTo(30);
+    }
+
+}
+
+    @Test
+    public void testGetAllLeaveTypes() {
+        when(leaveTypesRepository.findAll()).thenReturn(List.of(leaveType));
+        when(modelMapper.map(any(LeaveTypes.class), eq(LeaveTypesDto.class))).thenReturn(leaveTypesDto);
+
+        List<LeaveTypesDto> leaveTypesList = leaveTypesService.getAllLeaveTypes();
+
+        assertThat(leaveTypesList).isNotEmpty();
+        assertThat(leaveTypesList.get(0).getLeaveType()).isEqualTo("Annual Leave");
+        assertThat(leaveTypesList.get(0).getMaxLeaves()).isEqualTo(30);
+    }
+
+    @Test
+    public void testCheckLeaveTypeExists() {
+        when(leaveTypesRepository.existsByLeaveType("Annual Leave")).thenReturn(true);
+
+        boolean exists = leaveTypesService.checkLeaveTypeExists("Annual Leave");
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    public void testUpdateLeaveType() {
+        when(leaveTypesRepository.findByLeaveType("Annual Leave")).thenReturn(leaveType);
+        when(leaveTypesRepository.save(any(LeaveTypes.class))).thenReturn(leaveType);
+
+        LeaveTypesDto updatedLeaveTypeDto = new LeaveTypesDto();
+        updatedLeaveTypeDto.setLeaveType("Annual Leave");
+        updatedLeaveTypeDto.setMaxLeaves(35);
+
+        leaveTypesService.updateLeaveType(updatedLeaveTypeDto);
+
+        verify(leaveTypesRepository, times(1)).save(leaveType);
+        assertThat(leaveType.getMaxLeaves()).isEqualTo(35);
+    }
+}

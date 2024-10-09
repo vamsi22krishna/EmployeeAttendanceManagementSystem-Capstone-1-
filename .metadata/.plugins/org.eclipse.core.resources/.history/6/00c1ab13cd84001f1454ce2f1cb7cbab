@@ -1,0 +1,36 @@
+package com.attendencemanagementsystem.repository;
+
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+public interface AttendanceRepository extends JpaRepository<Attendance, String> {
+	
+	@Query("SELECT a FROM Attendance a WHERE a.userLogin.loginId = :loginId")
+    List<Attendance> findByUserLogin_LoginId(@Param("loginId") String loginId);
+	
+	 @Query("SELECT a FROM Attendance a WHERE a.userLogin.userInfo.userId IN :employeeIds")
+	    List<Attendance> findByEmployeeIds(@Param("employeeIds") List<String> employeeIds);
+	 
+	
+		    @Query("SELECT new com.attendencemanagementsystem.dto.AttendanceDto(a.attendanceId, u.userInfo.firstName, u.userInfo.lastName, a.date, a.status) " +
+		           "FROM Attendance a JOIN a.userLogin u WHERE u.userInfo.manager.userId = :managerId")
+		    List<AttendanceDto> findAttendanceRecordsByManage1r(@Param("managerId") String managerId);
+		    
+		    List<Attendance> findByUserLoginAndDate(UserLogin userLogin, Date date);
+		    
+		    @Query("SELECT a FROM Attendance a WHERE a.userLogin.loginId = :loginId AND a.status = :status")
+		    List<Attendance> findByUserLoginAndStatus(@Param("loginId") String loginId, @Param("status") String status);
+
+			List<Attendance> findByDateBetween(LocalDate startDate, LocalDate endDate);
+		
+}

@@ -1,0 +1,11 @@
+package com.attendencemanagementsystem.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@Data
+public class ChangePasswordDto {
+	 private String userEmail;
+	    private String newPassword;
+}

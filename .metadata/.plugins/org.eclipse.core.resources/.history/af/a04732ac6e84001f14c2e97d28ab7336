@@ -1,0 +1,178 @@
+package com.attendencemanagementsystem.serviceImpl;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.UserRoleService;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+
+@SpringBootTest
+public class UserLoginServiceImplTest {
+
+    @InjectMocks
+    private UserLoginServiceImpl userLoginService;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    @Mock
+    private UserInfoRepository userInfoRepository;
+
+    @Mock
+    private UserRoleService userRoleService;
+
+    @Mock
+    private LeaveBalanceService leaveBalanceService;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    public void testCreateUserLogin() {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setLoginId("UL123");
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password123");
+        userLoginDto.setUserId("UI123");
+
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("UL123");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("UI123");
+
+        when(userInfoRepository.findById("UI123")).thenReturn(Optional.of(userInfo));
+        when(userLoginRepository.save(any(UserLogin.class))).thenReturn(userLogin);
+        when(modelMapper.map(any(UserLoginDto.class), eq(UserLogin.class))).thenReturn(userLogin);
+        when(modelMapper.map(any(UserLogin.class), eq(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        UserLoginDto createdUserLogin = userLoginService.createUserLogin(userLoginDto);
+
+        assertThat(createdUserLogin).isNotNull();
+        assertThat(createdUserLogin.getLoginId()).isEqualTo("UL123");
+        assertThat(createdUserLogin.getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+
+    @Test
+    public void testGetUserLoginById() {
+        String loginId = "UL123";
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId(loginId);
+        userLogin.setUserEmail("john.doe@example.com");
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(userLogin));
+        when(modelMapper.map(any(UserLogin.class), eq(UserLoginDto.class))).thenReturn(new UserLoginDto());
+
+        UserLoginDto userLoginDto = userLoginService.getUserLoginById(loginId);
+
+        assertThat(userLoginDto).isNotNull();
+        assertThat(userLoginDto.getLoginId()).isEqualTo(loginId);
+    }
+
+    @Test
+    public void testUpdateUserLogin() {
+        String loginId = "UL123";
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("newpassword123");
+
+        UserLogin existingUserLogin = new UserLogin();
+        existingUserLogin.setLoginId(loginId);
+        existingUserLogin.setUserEmail("john.doe@example.com");
+        existingUserLogin.setPassword("password123");
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(existingUserLogin));
+        when(userLoginRepository.save(any(UserLogin.class))).thenReturn(existingUserLogin);
+        when(modelMapper.map(any(UserLoginDto.class), eq(UserLogin.class))).thenReturn(existingUserLogin);
+        when(modelMapper.map(any(UserLogin.class), eq(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        UserLoginDto updatedUserLogin = userLoginService.updateUserLogin(loginId, userLoginDto);
+
+        assertThat(updatedUserLogin).isNotNull();
+        assertThat(updatedUserLogin.getUserEmail()).isEqualTo("john.doe@example.com");
+        assertThat(updatedUserLogin.getPassword()).isEqualTo("newpassword123");
+    }
+
+    @Test
+    public void testDeleteUserLogin() {
+        String loginId = "UL123";
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId(loginId);
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(userLogin));
+
+        userLoginService.deleteUserLogin(loginId);
+
+        verify(userLoginRepository, times(1)).delete(userLogin);
+    }
+
+    @Test
+    public void testLogin() {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password123");
+
+        UserLogin userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+
+        when(userLoginRepository.findByEmail("john.doe@example.com")).thenReturn(Optional.of(userLogin));
+        when(modelMapper.map(any(UserLogin.class), eq(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        UserLoginDto loggedInUser = userLoginService.login(userLoginDto);
+
+        assertThat(loggedInUser).isNotNull();
+        assertThat(loggedInUser.getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+
+    @Test
+    public void testEmailExists() {
+        String email = "john.doe@example.com";
+
+        when(userLoginRepository.existsByUserEmail(email)).thenReturn(true);
+
+        boolean exists = userLoginService.emailExists(email);
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    public void testChangePassword() {
+        String userEmail = "john.doe@example.com";
+        String newPassword = "newpassword123";
+
+        UserLogin userLogin = new UserLogin();
+        userLogin.setUserEmail(userEmail);
+        userLogin.setPassword("oldpassword123");
+
+        when(userLoginRepository.findByEmail(userEmail)).thenReturn(Optional.of(userLogin));
+
+        userLoginService.changePassword(userEmail, newPassword);
+
+        verify(userLoginRepository, times(1)).save(userLogin);
+        assertThat(userLogin.getPassword()).isEqualTo(newPassword);
+    }
+}

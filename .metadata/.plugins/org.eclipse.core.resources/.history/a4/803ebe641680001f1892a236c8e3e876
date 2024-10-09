@@ -1,0 +1,88 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.AttendanceCorrectionDto;
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.AttendanceCorrectionRepository;
+import com.attendencemanagementsystem.service.AttendanceCorrectionService;
+
+@Service
+@Transactional
+public class AttendanceCorrectionServiceImpl implements AttendanceCorrectionService {
+
+    @Autowired
+    private AttendanceCorrectionRepository attendanceCorrectionRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public AttendanceCorrectionDto createAttendanceCorrection(AttendanceCorrectionDto attendanceCorrectionDto) {
+        AttendanceCorrection attendanceCorrection = modelMapper.map(attendanceCorrectionDto, AttendanceCorrection.class);
+        attendanceCorrection = attendanceCorrectionRepository.save(attendanceCorrection);
+        return modelMapper.map(attendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public AttendanceCorrectionDto getAttendanceCorrectionById(String correctionId) {
+        AttendanceCorrection attendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        return modelMapper.map(attendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public AttendanceCorrectionDto updateAttendanceCorrection(String correctionId, AttendanceCorrectionDto attendanceCorrectionDto) {
+        AttendanceCorrection existingAttendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        
+        modelMapper.map(attendanceCorrectionDto, existingAttendanceCorrection);
+        existingAttendanceCorrection = attendanceCorrectionRepository.save(existingAttendanceCorrection);
+        return modelMapper.map(existingAttendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public void deleteAttendanceCorrection(String correctionId) {
+        AttendanceCorrection attendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        attendanceCorrectionRepository.delete(attendanceCorrection);
+    }
+
+    
+    @Override
+    public List<AttendanceCorrectionDto> getCorrectionsByUser(UserLogin userLogin) {
+        return attendanceCorrectionRepository.findByUserLogin(userLogin).stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+
+	@Override
+	public AttendanceCorrection saveCorrection(AttendanceCorrection correction) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AttendanceCorrection updateCorrectionStatus(String correctionId, String status) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	private AttendanceCorrectionDto convertToDTO(AttendanceCorrection correction) {
+        AttendanceCorrectionDto dto = new AttendanceCorrectionDto();
+        dto.setCorrectionId(correction.getCorrectionId());
+        dto.setLoginId(correction.getUserLogin().getLoginId());
+        dto.setAttendanceId(correction.getAttendance().getAttendanceId());
+        dto.setCorrectionReason(correction.getCorrectionReason());
+        dto.setStatus(correction.getStatus());
+        return dto;
+    }
+}

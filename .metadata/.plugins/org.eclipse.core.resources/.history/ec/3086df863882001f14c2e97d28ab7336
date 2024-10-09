@@ -1,0 +1,14 @@
+package com.attendencemanagementsystem.service;
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.LeaveBalanceDto;
+
+public interface LeaveBalanceService {
+    LeaveBalanceDto createLeaveBalance(LeaveBalanceDto leaveBalanceDto);
+    LeaveBalanceDto getLeaveBalanceById(String balanceId);
+    LeaveBalanceDto updateLeaveBalance(String balanceId, LeaveBalanceDto leaveBalanceDto);
+    void deleteLeaveBalance(String balanceId);
+    public List<LeaveBalanceDto> getAllLeaveBalances();
+    public LeaveBalanceDto getLeaveBalance(String loginId, String leaveTypeId);
+}

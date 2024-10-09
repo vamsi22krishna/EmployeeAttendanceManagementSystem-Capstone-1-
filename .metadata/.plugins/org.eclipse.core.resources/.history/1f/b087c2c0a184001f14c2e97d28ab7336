@@ -1,0 +1,105 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.sql.Timestamp;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+
+import com.attendencemanagementsystem.entity.LeaveRequest;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class LeaveRequestRepositoryTest {
+
+    @Autowired
+    private LeaveRequestRepository leaveRequestRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Autowired
+    private LeaveTypesRepository leaveTypesRepository;
+
+    private UserInfo manager;
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private LeaveTypes leaveType;
+    private LeaveRequest leaveRequest;
+
+    @BeforeEach
+    public void setUp() {
+        manager = new UserInfo();
+        manager.setFirstName("Manager");
+        manager.setLastName("One");
+        manager.setAddress("123 Manager St");
+        manager.setSalary(80000.0f);
+        manager.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        manager = userInfoRepository.save(manager);
+
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        userInfo.setManager(manager);
+        userInfo = userInfoRepository.save(userInfo);
+
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+        userLogin = userLoginRepository.save(userLogin);
+
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveType("Annual Leave");
+        leaveType.setMaxLeaves(30);
+        leaveType = leaveTypesRepository.save(leaveType);
+
+        leaveRequest = new LeaveRequest();
+        leaveRequest.setUserLogin(userLogin);
+        leaveRequest.setLeaveType(leaveType);
+        leaveRequest.setStartDate(new Timestamp(System.currentTimeMillis()));
+        leaveRequest.setEndDate(new Timestamp(System.currentTimeMillis() + 86400000)); // 1 day later
+        leaveRequest.setStartSession("Morning");
+        leaveRequest.setEndSession("Evening");
+        leaveRequest.setStatus("Pending");
+        leaveRequest.setReason("Medical leave");
+        leaveRequest.setNumberOfLeaves(1.0);
+        leaveRequest = leaveRequestRepository.save(leaveRequest);
+    }
+
+    @Test
+    public void testFindByUserLogin_LoginId() {
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_LoginId(userLogin.getLoginId());
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testFindByUserLogin_Manager_UserId() {
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_Manager_UserId(manager.getUserId());
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testFindByUserLogin_UserInfo_Manager_UserId() {
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_UserInfo_Manager_UserId(manager.getUserId());
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+}

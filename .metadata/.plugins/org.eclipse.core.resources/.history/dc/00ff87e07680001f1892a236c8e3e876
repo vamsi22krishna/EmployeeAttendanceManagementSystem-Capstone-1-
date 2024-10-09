@@ -1,0 +1,79 @@
+package com.attendencemanagementsystem.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.entity.LeaveRequest;
+import com.attendencemanagementsystem.service.LeaveRequestService;
+
+@CrossOrigin(origins = "http://localhost:3000")
+@RestController
+@RequestMapping("/api/leave-requests")
+public class LeaveRequestController {
+
+    @Autowired
+    private LeaveRequestService leaveRequestService;
+
+    @PostMapping
+    public ResponseEntity<LeaveRequestDto> createLeaveRequest(@RequestBody LeaveRequestDto leaveRequestDto) {
+        return ResponseEntity.ok(leaveRequestService.createLeaveRequest(leaveRequestDto));
+    }
+
+    @GetMapping("/{leaveId}")
+    public ResponseEntity<LeaveRequestDto> getLeaveRequestById(@PathVariable String leaveId) {
+        return ResponseEntity.ok(leaveRequestService.getLeaveRequestById(leaveId));
+    }
+
+    @PutMapping("/{leaveId}")
+    public ResponseEntity<LeaveRequestDto> updateLeaveRequest(@PathVariable String leaveId, @RequestBody LeaveRequestDto leaveRequestDto) {
+        return ResponseEntity.ok(leaveRequestService.updateLeaveRequest(leaveId, leaveRequestDto));
+    }
+
+    @DeleteMapping("/{leaveId}")
+    public ResponseEntity<Void> deleteLeaveRequest(@PathVariable String leaveId) {
+        leaveRequestService.deleteLeaveRequest(leaveId);
+        return ResponseEntity.noContent().build();
+    }
+//    @PostMapping("/submit")
+//    public LeaveRequestDto submitLeaveRequest(@RequestBody LeaveRequestDto leaveRequestDto) {
+//        return leaveRequestService.submitLeaveRequest(leaveRequestDto);
+//    }
+    
+    @PostMapping("/submit")
+    public ResponseEntity<LeaveRequest> submitLeaveRequest(@RequestBody LeaveRequestDto leaveRequestDTO, @RequestParam String loginId) {
+        LeaveRequest savedLeaveRequest = leaveRequestService.submitLeaveRequest(leaveRequestDTO, loginId);
+        return ResponseEntity.ok(savedLeaveRequest);
+    }
+
+    @GetMapping("/user/{loginId}")
+    public List<LeaveRequestDto> getLeaveRequestsByUser(@PathVariable String loginId) {
+        return leaveRequestService.getLeaveRequestsByUser(loginId);
+    }
+
+    @GetMapping("/manager/{managerId}")
+    public List<LeaveRequestDto> getLeaveRequestsByManager(@PathVariable String managerId) {
+        return leaveRequestService.getLeaveRequestsByManager(managerId);
+    }
+
+//    @PostMapping("/approve/{leaveId}")
+//    public LeaveRequestDto approveLeaveRequest(@PathVariable String leaveId) {
+//        return leaveRequestService.approveLeaveRequest(leaveId);
+//    }
+//
+//    @PostMapping("/reject/{leaveId}")
+//    public LeaveRequestDto rejectLeaveRequest(@PathVariable String leaveId) {
+//        return leaveRequestService.rejectLeaveRequest(leaveId);
+//    }
+}

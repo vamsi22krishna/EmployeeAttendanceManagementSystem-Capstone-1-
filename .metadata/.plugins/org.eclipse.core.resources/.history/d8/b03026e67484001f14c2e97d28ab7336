@@ -1,0 +1,71 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.entity.UserRole;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class UserRoleRepositoryTest {
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private UserRole userRole;
+
+    @BeforeEach
+    public void setUp() {
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        userInfo = userInfoRepository.save(userInfo); // Save and retrieve the entity to ensure the ID is set
+
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+        userLogin = userLoginRepository.save(userLogin); // Save and retrieve the entity to ensure the ID is set
+
+        userRole = new UserRole();
+        userRole.setUserLogin(userLogin);
+        userRole.setRole("Manager");
+        userRole = userRoleRepository.save(userRole); // Save and retrieve the entity to ensure the ID is set
+    }
+
+    @Test
+    public void testFindByUserLogin_LoginId() {
+        List<String> roles = userRoleRepository.findByUserLogin_LoginId(userLogin.getLoginId());
+        assertThat(roles).isNotEmpty();
+        assertThat(roles.get(0)).isEqualTo("Manager");
+    }
+
+    @Test
+    public void testFindByRole() {
+        List<UserRole> roles = userRoleRepository.findByRole("Manager");
+        assertThat(roles).isNotEmpty();
+        assertThat(roles.get(0).getRole()).isEqualTo("Manager");
+        assertThat(roles.get(0).getUserLogin().getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+}

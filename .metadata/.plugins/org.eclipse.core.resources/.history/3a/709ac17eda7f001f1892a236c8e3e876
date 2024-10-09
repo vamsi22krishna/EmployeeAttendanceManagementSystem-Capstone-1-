@@ -1,0 +1,160 @@
+package com.attendencemanagementsystem.serviceImpl;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.UserLoginService;
+import com.attendencemanagementsystem.service.UserRoleService;
+
+@Service
+//@Transactional
+public class UserLoginServiceImpl implements UserLoginService {
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+    
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+    
+    @Autowired
+    private UserRoleService userRoleService;
+    
+    
+
+//    @Override
+//    public UserLoginDto createUserLogin(UserLoginDto userLoginDto) {
+//        UserLogin userLogin = modelMapper.map(userLoginDto, UserLogin.class);
+//        userLogin = userLoginRepository.save(userLogin);
+//        return modelMapper.map(userLogin, UserLoginDto.class);
+//    }
+
+    @Override
+    public UserLoginDto getUserLoginById(String loginId) {
+        UserLogin userLogin = userLoginRepository.findById(loginId)
+                .orElseThrow(() -> new ResourceNotFoundException("User login not found with id: " + loginId));
+        return modelMapper.map(userLogin, UserLoginDto.class);
+    }
+
+    @Override
+    public UserLoginDto updateUserLogin(String loginId, UserLoginDto userLoginDto) {
+        UserLogin existingUserLogin = userLoginRepository.findById(loginId)
+                .orElseThrow(() -> new ResourceNotFoundException("User login not found with id: " + loginId));
+        
+        modelMapper.map(userLoginDto, existingUserLogin);
+        existingUserLogin = userLoginRepository.save(existingUserLogin);
+        return modelMapper.map(existingUserLogin, UserLoginDto.class);
+    }
+
+    @Override
+    public void deleteUserLogin(String loginId) {
+        UserLogin userLogin = userLoginRepository.findById(loginId)
+                .orElseThrow(() -> new ResourceNotFoundException("User login not found with id: " + loginId));
+        userLoginRepository.delete(userLogin);
+    }
+    @Override
+    public UserLoginDto login(UserLoginDto userLoginDto) {
+        UserLogin userLogin = userLoginRepository.findByEmail(userLoginDto.getUserEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User login not found with email: " + userLoginDto.getUserEmail()));
+
+        // Validate password (ensure you hash and check against the hashed password in a real application)
+        if (!userLogin.getPassword().equals(userLoginDto.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        return modelMapper.map(userLogin, UserLoginDto.class);
+    }
+    
+
+//    @Override
+//    public UserLoginDto createUserLogin(UserLoginDto userLoginDto) {
+//        UserLogin userLogin = new UserLogin();
+//        userLogin.setUserEmail(userLoginDto.getUserEmail());
+//        userLogin.setPassword(userLoginDto.getPassword());
+//
+//        // Fetch and set the UserInfo entity if userId is provided
+//        if (userLoginDto.getUserId() != null) {
+//            UserInfo userInfo = userInfoRepository.findById(userLoginDto.getUserId()).orElse(null);
+//            if (userInfo != null) {
+//                userLogin.setUserInfo(userInfo);
+//            }
+//        }
+//
+//        userLogin = userLoginRepository.save(userLogin);
+//        return convertToDto(userLogin);
+//    }
+    @Override
+    public UserLoginDto createUserLogin(UserLoginDto userLoginDto) {
+        // Validate input
+        if (userLoginDto.getUserEmail() == null || userLoginDto.getPassword() == null) {
+            throw new IllegalArgumentException("Email and password must be provided");
+        }
+
+        UserLogin userLogin = new UserLogin();
+        userLogin.setUserEmail(userLoginDto.getUserEmail());
+        userLogin.setPassword(userLoginDto.getPassword());
+
+        // Fetch and set the UserInfo entity if userId is provided
+        if (userLoginDto.getUserId() != null) {
+            UserInfo userInfo = userInfoRepository.findById(userLoginDto.getUserId()).orElse(null);
+            if (userInfo == null) {
+                throw new RuntimeException("UserInfo with ID " + userLoginDto.getUserId() + " not found");
+            }
+            userLogin.setUserInfo(userInfo);
+        } else {
+            throw new IllegalArgumentException("User ID must be provided to associate with UserInfo");
+        }
+
+        // Save the user login
+        userLogin = userLoginRepository.save(userLogin);
+        
+        return convertToDto(userLogin);
+    }
+
+
+    // Method to convert UserLogin entity to UserLoginDto
+    private UserLoginDto convertToDto(UserLogin userLogin) {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setLoginId(userLogin.getLoginId());
+        userLoginDto.setUserId(userLogin.getUserInfo().getUserId());
+        userLoginDto.setUserEmail(userLogin.getUserEmail());
+        userLoginDto.setPassword(userLogin.getPassword());
+        return userLoginDto;
+    }
+    
+    
+    public UserLoginDto login1(UserLoginDto userLoginDto) {
+        try {
+            UserLogin userLogin = userLoginRepository.findByUserEmailAndPassword(userLoginDto.getUserEmail(), userLoginDto.getPassword());
+            if (userLogin != null) {
+                List<String> roles = userRoleService.getUserRolesByLoginId(userLogin.getLoginId());
+                UserLoginDto loginResponse = new UserLoginDto();
+                loginResponse.setLoginId(userLogin.getLoginId());
+                loginResponse.setUserEmail(userLogin.getUserEmail());
+                loginResponse.setUserId(userLogin.getUserInfo().getUserId());
+                loginResponse.setPassword(userLogin.getPassword()); // Ensure password is set
+                loginResponse.setRoles(roles);
+                return loginResponse;
+            } else {
+                throw new RuntimeException("Invalid credentials");
+            }
+        } catch (Exception e) {
+            // Log the exception
+            e.printStackTrace();
+            throw new RuntimeException("An error occurred during login");
+        }
+    }
+}

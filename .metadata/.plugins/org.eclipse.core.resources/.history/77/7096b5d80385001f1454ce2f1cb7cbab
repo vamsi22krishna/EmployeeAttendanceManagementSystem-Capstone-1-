@@ -1,0 +1,159 @@
+package com.attendencemanagementsystem.controller;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.service.AttendanceService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(AttendanceController.class)
+public class AttendanceControllerTest {
+
+    @InjectMocks
+    private AttendanceController attendanceController;
+
+    @MockBean
+    private AttendanceService attendanceService;
+
+    @MockBean
+    private AttendanceRepository attendanceRepository;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(attendanceController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateAttendance() throws Exception {
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setLoginId("UL123");
+        attendanceDto.setStatus("Signed In");
+
+        when(attendanceService.createAttendance(any(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        mockMvc.perform(post("/api/attendance")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(attendanceDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.status").value("Signed In"));
+    }
+
+    @Test
+    public void testGetAttendanceById() throws Exception {
+        String attendanceId = "AT123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setAttendanceId(attendanceId);
+        attendanceDto.setStatus("Signed In");
+
+        when(attendanceService.getAttendanceById(attendanceId)).thenReturn(attendanceDto);
+
+        mockMvc.perform(get("/api/attendance/{attendanceId}", attendanceId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendanceId").value(attendanceId))
+                .andExpect(jsonPath("$.status").value("Signed In"));
+    }
+
+    @Test
+    public void testUpdateAttendance() throws Exception {
+        String attendanceId = "AT123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setStatus("Signed Out");
+
+        when(attendanceService.updateAttendance(eq(attendanceId), any(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        mockMvc.perform(put("/api/attendance/{attendanceId}", attendanceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(attendanceDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("Signed Out"));
+    }
+
+    
+    @Test
+    public void testCheckIn() throws Exception {
+        String loginId = "UL123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setLoginId(loginId);
+        attendanceDto.setStatus("Signed In");
+
+        when(attendanceService.logCheckIn(loginId)).thenReturn(attendanceDto);
+
+        mockMvc.perform(post("/api/attendance/check-in/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value(loginId))
+                .andExpect(jsonPath("$.status").value("Signed In"));
+    }
+
+    @Test
+    public void testCheckOut() throws Exception {
+        String loginId = "UL123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setLoginId(loginId);
+        attendanceDto.setStatus("Signed Out");
+
+        when(attendanceService.logCheckOut(loginId)).thenReturn(attendanceDto);
+
+        mockMvc.perform(post("/api/attendance/check-out/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value(loginId))
+                .andExpect(jsonPath("$.status").value("Signed Out"));
+    }
+
+    @Test
+    public void testGetAttendanceRecords() throws Exception {
+        String loginId = "UL123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setLoginId(loginId);
+        attendanceDto.setStatus("Signed In");
+
+        when(attendanceService.getAttendanceRecords(loginId)).thenReturn(List.of(attendanceDto));
+
+        mockMvc.perform(get("/api/attendance/records/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value(loginId))
+                .andExpect(jsonPath("$.status").value("Signed In"));
+    }
+
+    @Test
+    public void testGetAttendanceRecordsByManager() throws Exception {
+        String managerId = "UI123";
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setLoginId("UL123");
+        attendanceDto.setStatus("Signed In");
+
+        when(attendanceRepository.findAttendanceRecordsByManager(managerId)).thenReturn(List.of(attendanceDto));
+
+        mockMvc.perform(get("/api/attendance/manager/{managerId}", managerId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.status").value("Signed In"));
+    }
+}

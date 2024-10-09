@@ -1,0 +1,116 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.entity.UserRole;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.UserRoleRepository;
+
+@SpringBootTest
+public class UserRoleServiceImplTest {
+
+    @InjectMocks
+    private UserRoleServiceImpl userRoleService;
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private UserRole userRole;
+    private UserRoleDto userRoleDto;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        userRole = new UserRole();
+        userRole.setUserRoleId("UR123");
+        userRole.setRole("Admin");
+
+        userRoleDto = new UserRoleDto();
+        userRoleDto.setUserRoleId("UR123");
+        userRoleDto.setRole("Admin");
+    }
+
+    @Test
+    public void testCreateUserRole() {
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
+        when(modelMapper.map(any(UserRoleDto.class), eq(UserRole.class))).thenReturn(userRole);
+        when(modelMapper.map(any(UserRole.class), eq(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        UserRoleDto createdUserRole = userRoleService.createUserRole(userRoleDto);
+
+        assertThat(createdUserRole).isNotNull();
+        assertThat(createdUserRole.getUserRoleId()).isEqualTo("UR123");
+        assertThat(createdUserRole.getRole()).isEqualTo("Admin");
+    }
+
+    @Test
+    public void testGetUserRoleById() {
+        String userRoleId = "UR123";
+
+        when(userRoleRepository.findById(userRoleId)).thenReturn(Optional.of(userRole));
+        when(modelMapper.map(any(UserRole.class), eq(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        UserRoleDto foundUserRole = userRoleService.getUserRoleById(userRoleId);
+
+        assertThat(foundUserRole).isNotNull();
+        assertThat(foundUserRole.getUserRoleId()).isEqualTo(userRoleId);
+    }
+
+    @Test
+    public void testUpdateUserRole() {
+        String userRoleId = "UR123";
+        UserRoleDto updatedUserRoleDto = new UserRoleDto();
+        updatedUserRoleDto.setRole("User");
+
+        when(userRoleRepository.findById(userRoleId)).thenReturn(Optional.of(userRole));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
+        when(modelMapper.map(any(UserRoleDto.class), eq(UserRole.class))).thenReturn(userRole);
+        when(modelMapper.map(any(UserRole.class), eq(UserRoleDto.class))).thenReturn(updatedUserRoleDto);
+
+        UserRoleDto updatedUserRole = userRoleService.updateUserRole(userRoleId, updatedUserRoleDto);
+
+        assertThat(updatedUserRole).isNotNull();
+        assertThat(updatedUserRole.getRole()).isEqualTo("User");
+    }
+
+    @Test
+    public void testDeleteUserRole() {
+        String userRoleId = "UR123";
+
+        when(userRoleRepository.findById(userRoleId)).thenReturn(Optional.of(userRole));
+
+        userRoleService.deleteUserRole(userRoleId);
+
+        verify(userRoleRepository, times(1)).delete(userRole);
+    }
+
+    @Test
+    public void testGetUserRolesByLoginId() {
+        String loginId = "UL123";
+        List<String> roles = List.of("Admin", "User");
+
+        when(userRoleRepository.findByUserLogin_LoginId(loginId)).thenReturn(roles);
+
+        List<String> userRoles = userRoleService.getUserRolesByLoginId(loginId);
+
+        assertThat(userRoles).isNotNull();
+        assertThat(userRoles).containsExactlyInAnyOrder("Admin", "User");
+    }
+}

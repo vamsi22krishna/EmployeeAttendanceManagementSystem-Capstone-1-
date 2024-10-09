@@ -1,0 +1,241 @@
+package com.attendencemanagementsystem.serviceImpl;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.AttendanceService;
+
+@Service
+//@Transactional
+public class AttendanceServiceImpl implements AttendanceService {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+    
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public AttendanceDto createAttendance(AttendanceDto attendanceDto) {
+        Attendance attendance = modelMapper.map(attendanceDto, Attendance.class);
+        attendance = attendanceRepository.save(attendance);
+        return modelMapper.map(attendance, AttendanceDto.class);
+    }
+
+    @Override
+    public AttendanceDto getAttendanceById(String attendanceId) {
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance not found with id: " + attendanceId));
+        return modelMapper.map(attendance, AttendanceDto.class);
+    }
+
+    @Override
+    public AttendanceDto updateAttendance(String attendanceId, AttendanceDto attendanceDto) {
+        Attendance existingAttendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance not found with id: " + attendanceId));
+        
+        modelMapper.map(attendanceDto, existingAttendance);
+        existingAttendance = attendanceRepository.save(existingAttendance);
+        return modelMapper.map(existingAttendance, AttendanceDto.class);
+    }
+
+    @Override
+    public void deleteAttendance(String attendanceId) {
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance not found with id: " + attendanceId));
+        attendanceRepository.delete(attendance);
+    }
+    
+    public AttendanceDto logCheckIn(String loginId) {
+        UserLogin userLogin = userLoginRepository.findById(loginId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Attendance attendance = new Attendance();
+        attendance.setUserLogin(userLogin);
+        attendance.setCheckIn(new Timestamp(System.currentTimeMillis()));
+        attendance.setDate(new Date(System.currentTimeMillis()));
+        attendance.setStatus("Signed In");
+        Attendance savedAttendance = attendanceRepository.save(attendance);
+        return convertToDto(savedAttendance);
+    }
+
+//    public AttendanceDto logCheckOut(String loginId) {
+//        UserLogin userLogin = userLoginRepository.findById(loginId)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        List<Attendance> attendances = attendanceRepository.findByUserLogin_LoginId(loginId);
+//        Attendance attendance = attendances.stream()
+//                .filter(a -> a.getCheckOut() == null)
+//                .findFirst()
+//                .orElseThrow(() -> new RuntimeException("No check-in record found for today."));
+//        attendance.setCheckOut(new Timestamp(System.currentTimeMillis()));
+////        attendance.setStatus("Checked Out");
+//        long hoursWorked = (attendance.getCheckOut().getTime() - attendance.getCheckIn().getTime()) / (1000 * 60 * 60);
+//        attendance.setStatus(hoursWorked >= 8 ? "P" : "A");
+//        Attendance savedAttendance = attendanceRepository.save(attendance);
+//        return convertToDto(savedAttendance);
+//    }
+    
+    public AttendanceDto logCheckOut(String loginId) {
+        Optional<UserLogin> userLoginOptional = userLoginRepository.findById(loginId);
+        if (!userLoginOptional.isPresent()) {
+            throw new RuntimeException("UserLogin not found");
+        }
+        UserLogin userLogin = userLoginOptional.get();
+
+        List<Attendance> attendances = attendanceRepository.findByUserLoginAndStatus(userLogin.getLoginId(), "Signed In");
+        if (attendances.isEmpty()) {
+            throw new RuntimeException("No sign-in record found for user");
+        }
+
+        Attendance attendance = attendances.get(0);
+        attendance.setCheckOut(new Timestamp(System.currentTimeMillis()));
+        attendance.setStatus("SignedOut");
+        attendanceRepository.save(attendance);
+
+        // Calculate total working hours for the day
+        List<Attendance> dailyAttendances = attendanceRepository.findByUserLoginAndDate(userLogin, new Date(System.currentTimeMillis()));
+       // System.out.println("dailyAttendances ==============================================================");
+       // System.out.println(dailyAttendances);
+        
+        long totalHoursWorked = dailyAttendances.stream()
+            .filter(att -> att.getCheckIn() != null && att.getCheckOut() != null)
+            .mapToLong(att -> (att.getCheckOut().getTime() - att.getCheckIn().getTime()) / (1000 * 60 * 60))
+            .sum();
+
+        System.out.println("check out ==============================================================");
+        System.out.println(totalHoursWorked);
+        // Update status based on total hours worked
+       
+        if(dailyAttendances.size()>=3) {
+        
+        dailyAttendances.forEach(att -> {
+            if (totalHoursWorked >= 8) {
+                att.setStatus("P");
+            } else {
+                att.setStatus("A");
+            }
+            attendanceRepository.save(att);
+        });
+        }
+        return convertToDto(attendance);
+    }
+//    public List<AttendanceDto> getAttendanceRecords(String loginId) {
+//        List<Attendance> attendances = attendanceRepository.findByUserLogin_LoginId(loginId);
+//        return attendances.stream().map(this::convertToDto).collect(Collectors.toList());
+//    }
+    public List<AttendanceDto> getAttendanceRecords(String loginId) {
+        List<Attendance> records = attendanceRepository.findByUserLogin_LoginId(loginId);
+
+        // Generate a map of existing records by date
+        Map<String, Attendance> recordMap = new HashMap<>();
+        for (Attendance record : records) {
+            recordMap.put(record.getDate().toString(), record);
+        }
+
+        // Get the date range for the current month
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        Date startDate = new Date(calendar.getTimeInMillis());
+        calendar.add(Calendar.MONTH, 1);
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        calendar.add(Calendar.DATE, -1);
+        Date endDate = new Date(calendar.getTimeInMillis());
+
+        // Get today's date
+        String todayString = new java.sql.Date(System.currentTimeMillis()).toString();
+
+        // Generate "Absent" records for missing dates, excluding weekends and today
+        List<AttendanceDto> updatedRecords = new ArrayList<>();
+        for (Date date = startDate; !date.after(endDate); calendar.add(Calendar.DATE, 1), date = new Date(calendar.getTimeInMillis())) {
+            int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+            String dateString = new java.sql.Date(date.getTime()).toString();
+
+            if (dayOfWeek != Calendar.SATURDAY && dayOfWeek != Calendar.SUNDAY) {
+                // Check if the date is not today and is missing in the records
+                if (!dateString.equals(todayString) && !recordMap.containsKey(dateString)) {
+                    UserLogin userLogin = userLoginRepository.findByLoginId(loginId);
+                    Attendance absentRecord = new Attendance();
+                    absentRecord.setUserLogin(userLogin);
+                    absentRecord.setDate(date);
+                    absentRecord.setStatus("A");
+                    attendanceRepository.save(absentRecord); // Save the absent record to the database
+                    updatedRecords.add(convertToDto(absentRecord));
+                } else if (recordMap.containsKey(dateString)) {
+                    updatedRecords.add(convertToDto(recordMap.get(dateString)));
+                }
+            }
+        }
+
+        // Add existing records
+        updatedRecords.addAll(records.stream().map(this::convertToDto).collect(Collectors.toList()));
+
+        return updatedRecords;
+    }
+
+
+//    public List<AttendanceDto> getAttendanceRecords(String loginId) {
+//        List<Attendance> attendances = attendanceRepository.findByUserLogin_LoginId(loginId);
+//        String statusToDisplay = attendances.stream()
+//                .map(Attendance::getStatus)
+//                .anyMatch(status -> status.equals("P")) ? "P" : "A";
+//        // Convert to DTOs
+//        List<AttendanceDto> attendanceDtos = attendances.stream()
+//            .map(this::convertToDto)
+//            .collect(Collectors.toList());
+//        
+//        // Set the determined status to display
+//        if (!attendanceDtos.isEmpty()) {
+//            attendanceDtos.get(0).setStatus(statusToDisplay);
+//        }
+//        return attendanceDtos;
+//    }
+
+    private AttendanceDto convertToDto(Attendance attendance) {
+        AttendanceDto dto = new AttendanceDto();
+        dto.setAttendanceId(attendance.getAttendanceId());
+        dto.setLoginId(attendance.getUserLogin().getLoginId());
+        dto.setCheckIn(attendance.getCheckIn());
+        dto.setCheckOut(attendance.getCheckOut());
+        dto.setDate(attendance.getDate());
+        dto.setStatus(attendance.getStatus());
+        return dto;
+    }
+    
+    public List<AttendanceDto> getAttendanceByManager(String managerId) {
+        List<String> employeeIds = userLoginRepository.findEmployeesByManagerId(managerId);
+        return attendanceRepository.findByEmployeeIds(employeeIds).stream()
+                .map(this::convertToDto1)
+                .collect(Collectors.toList());
+    }
+
+    private AttendanceDto convertToDto1(Attendance attendance) {
+        AttendanceDto dto = new AttendanceDto();
+        dto.setEmployeeId(attendance.getUserLogin().getUserInfo().getUserId());
+        
+        dto.setDate(attendance.getDate());
+        dto.setStatus(attendance.getStatus());
+        // Add more fields as necessary
+        return dto;
+    }
+}

@@ -1,0 +1,187 @@
+package com.attendencemanagementsystem.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.AttendanceCorrectionDto;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.service.AttendanceCorrectionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(AttendanceCorrectionController.class)
+public class AttendanceCorrectionControllerTest {
+
+    @InjectMocks
+    private AttendanceCorrectionController attendanceCorrectionController;
+
+    @MockBean
+    private AttendanceCorrectionService attendanceCorrectionService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(attendanceCorrectionController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateAttendanceCorrection() throws Exception {
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId("AC123");
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.createAttendanceCorrection(any(AttendanceCorrectionDto.class))).thenReturn(correctionDto);
+
+        mockMvc.perform(post("/api/attendancecorrections")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(correctionDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value("AC123"))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testGetAttendanceCorrectionById() throws Exception {
+        String correctionId = "AC123";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId(correctionId);
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.getAttendanceCorrectionById(correctionId)).thenReturn(correctionDto);
+
+        mockMvc.perform(get("/api/attendancecorrections/{correctionId}", correctionId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value(correctionId))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testUpdateAttendanceCorrection() throws Exception {
+        String correctionId = "AC123";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId(correctionId);
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.updateAttendanceCorrection(eq(correctionId), any(AttendanceCorrectionDto.class))).thenReturn(correctionDto);
+
+        mockMvc.perform(put("/api/attendancecorrections/{correctionId}", correctionId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(correctionDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value(correctionId))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testDeleteAttendanceCorrection() throws Exception {
+        String correctionId = "AC123";
+
+        doNothing().when(attendanceCorrectionService).deleteAttendanceCorrection(correctionId);
+
+        mockMvc.perform(delete("/api/attendancecorrections/{correctionId}", correctionId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testGetCorrectionsByUser() throws Exception {
+        String loginId = "UL123";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId("AC123");
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.getCorrectionsByUser(any(UserLogin.class))).thenReturn(List.of(correctionDto));
+
+        mockMvc.perform(get("/api/attendancecorrections/user/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value("AC123"))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testSaveCorrection() throws Exception {
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId("AC123");
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.saveCorrection(any(AttendanceCorrectionDto.class))).thenReturn(correctionDto);
+
+        mockMvc.perform(post("/api/attendancecorrections/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(correctionDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value("AC123"))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testUpdateCorrectionStatus() throws Exception {
+        String correctionId = "AC123";
+        String status = "Approved";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId(correctionId);
+        correctionDto.setStatus(status);
+
+        when(attendanceCorrectionService.updateCorrectionStatus(eq(correctionId), eq(status))).thenReturn(correctionDto);
+
+        mockMvc.perform(post("/api/attendancecorrections/updatestatus/{correctionId}", correctionId)
+                .param("status", status)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value(correctionId))
+                .andExpect(jsonPath("$.status").value(status));
+    }
+
+    @Test
+    public void testGetCorrectionsForManager() throws Exception {
+        String managerId = "UI123";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId("AC123");
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.getCorrectionsForManager(managerId)).thenReturn(List.of(correctionDto));
+
+        mockMvc.perform(get("/api/attendancecorrections/manager/{managerId}", managerId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value("AC123"))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+
+    @Test
+    public void testGetCorrectionHistoryForManager() throws Exception {
+        String managerId = "UI123";
+        AttendanceCorrectionDto correctionDto = new AttendanceCorrectionDto();
+        correctionDto.setCorrectionId("AC123");
+        correctionDto.setCorrectionReason("Incorrect check-in time");
+
+        when(attendanceCorrectionService.getCorrectionHistoryForManager(managerId)).thenReturn(List.of(correctionDto));
+
+        mockMvc.perform(get("/api/attendancecorrections/manager/history/{managerId}", managerId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionId").value("AC123"))
+                .andExpect(jsonPath("$.correctionReason").value("Incorrect check-in time"));
+    }
+}

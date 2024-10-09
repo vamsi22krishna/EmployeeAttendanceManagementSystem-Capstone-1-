@@ -1,0 +1,5 @@
+package com.attendancemanagementsystem.controller;
+
+public class UserInfoControllerTest {
+
+}

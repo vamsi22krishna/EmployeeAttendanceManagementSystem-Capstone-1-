@@ -1,0 +1,154 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+
+import com.attendencemanagementsystem.dto.LeaveBalanceDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+
+public class LeaveBalanceServiceImplTest {
+
+    @InjectMocks
+    private LeaveBalanceServiceImpl leaveBalanceService;
+
+    @Mock
+    private LeaveBalanceRepository leaveBalanceRepository;
+
+    @Mock
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private LeaveBalance leaveBalance;
+    private LeaveBalanceDto leaveBalanceDto;
+    private UserLogin userLogin;
+    private LeaveTypes leaveType;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        userLogin = new UserLogin();
+        userLogin.setLoginId("UL123");
+
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveTypeId("LT123");
+        leaveType.setLeaveType("Annual Leave");
+
+        leaveBalance = new LeaveBalance();
+        leaveBalance.setBalanceId("LB123");
+        leaveBalance.setUserLogin(userLogin);
+        leaveBalance.setLeaveType(leaveType);
+        leaveBalance.setTotalLeaves(30);
+        leaveBalance.setUsedLeaves(5.0);
+
+        leaveBalanceDto = new LeaveBalanceDto();
+        leaveBalanceDto.setBalanceId("LB123");
+        leaveBalanceDto.setLoginId("UL123");
+        leaveBalanceDto.setLeaveTypeId("LT123");
+        leaveBalanceDto.setTotalLeaves(30);
+        leaveBalanceDto.setUsedLeaves(5.0);
+    }
+
+    @Test
+    public void testCreateLeaveBalance() {
+        when(userLoginRepository.findById("UL123")).thenReturn(Optional.of(userLogin));
+        when(leaveTypesRepository.findById("LT123")).thenReturn(Optional.of(leaveType));
+        when(leaveBalanceRepository.save(any(LeaveBalance.class))).thenReturn(leaveBalance);
+
+        LeaveBalanceDto createdLeaveBalance = leaveBalanceService.createLeaveBalance(leaveBalanceDto);
+
+        assertThat(createdLeaveBalance).isNotNull();
+        assertThat(createdLeaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(createdLeaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testGetLeaveBalance() {
+        when(leaveBalanceRepository.findByUserLogin_LoginIdAndLeaveType_LeaveTypeId("UL123", "LT123")).thenReturn(leaveBalance);
+
+        LeaveBalanceDto foundLeaveBalance = leaveBalanceService.getLeaveBalance("UL123", "LT123");
+
+        assertThat(foundLeaveBalance).isNotNull();
+        assertThat(foundLeaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(foundLeaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testGetAllLeaveBalances() {
+        when(leaveBalanceRepository.findAll()).thenReturn(List.of(leaveBalance));
+
+        List<LeaveBalanceDto> leaveBalances = leaveBalanceService.getAllLeaveBalances();
+
+        assertThat(leaveBalances).isNotEmpty();
+        assertThat(leaveBalances.get(0).getTotalLeaves()).isEqualTo(30);
+        assertThat(leaveBalances.get(0).getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testGetLeaveBalanceById() {
+        when(leaveBalanceRepository.findById("LB123")).thenReturn(Optional.of(leaveBalance));
+        when(modelMapper.map(any(LeaveBalance.class), eq(LeaveBalanceDto.class))).thenReturn(leaveBalanceDto);
+
+        LeaveBalanceDto foundLeaveBalance = leaveBalanceService.getLeaveBalanceById("LB123");
+
+        assertThat(foundLeaveBalance).isNotNull();
+        assertThat(foundLeaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(foundLeaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testUpdateLeaveBalance() {
+        when(leaveBalanceRepository.findById("LB123")).thenReturn(Optional.of(leaveBalance));
+        when(leaveBalanceRepository.save(any(LeaveBalance.class))).thenReturn(leaveBalance);
+        when(modelMapper.map(any(LeaveBalance.class), eq(LeaveBalanceDto.class))).thenReturn(leaveBalanceDto);
+
+        LeaveBalanceDto updatedLeaveBalance = leaveBalanceService.updateLeaveBalance("LB123", leaveBalanceDto);
+
+        assertThat(updatedLeaveBalance).isNotNull();
+        assertThat(updatedLeaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(updatedLeaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testDeleteLeaveBalance() {
+        when(leaveBalanceRepository.findById("LB123")).thenReturn(Optional.of(leaveBalance));
+        doNothing().when(leaveBalanceRepository).delete(leaveBalance);
+
+        leaveBalanceService.deleteLeaveBalance("LB123");
+
+        verify(leaveBalanceRepository, times(1)).delete(leaveBalance);
+    }
+
+    @Test
+    public void testCreateLeaveBalancesForUser() {
+        when(userLoginRepository.findById("UL123")).thenReturn(Optional.of(userLogin));
+        when(leaveTypesRepository.findAll()).thenReturn(List.of(leaveType));
+        when(leaveBalanceRepository.saveAll(anyList())).thenReturn(List.of(leaveBalance));
+
+        leaveBalanceService.createLeaveBalancesForUser("UL123");
+
+        verify(leaveBalanceRepository, times(1)).saveAll(anyList());
+    }
+}

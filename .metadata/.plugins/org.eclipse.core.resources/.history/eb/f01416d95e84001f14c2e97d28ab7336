@@ -1,0 +1,95 @@
+package com.attendancemanagementsystem.controller;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import com.attendencemanagementsystem.controller.UserInfoController;
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.service.UserInfoService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(UserInfoController.class)
+public class UserInfoControllerTest {
+	 @Autowired
+	    private MockMvc mockMvc;
+
+	    @MockBean
+	    private UserInfoService userInfoService;
+	    
+	    @Test
+	    public void testCreateUserInfo() throws Exception {
+	        UserInfoDto userInfoDto = new UserInfoDto("1", "John", "Doe");
+	        Mockito.when(userInfoService.createUserInfo(Mockito.any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+	        mockMvc.perform(MockMvcRequestBuilders.post("/api/userinfo")
+	                .contentType(MediaType.APPLICATION_JSON)
+	                .content(new ObjectMapper().writeValueAsString(userInfoDto)))
+	                .andExpect(status().isOk())
+	                .andExpect(jsonPath("$.userId", is("1")))
+	                .andExpect(jsonPath("$.firstName", is("John")))
+	                .andExpect(jsonPath("$.lastName", is("Doe")));
+	    }
+	    @Test
+	    public void testGetUserInfoById() throws Exception {
+	        UserInfoDto userInfoDto = new UserInfoDto("1", "John", "Doe");
+	        Mockito.when(userInfoService.getUserInfoById("1")).thenReturn(userInfoDto);
+
+	        mockMvc.perform(MockMvcRequestBuilders.get("/api/userinfo/1")
+	                .accept(MediaType.APPLICATION_JSON))
+	                .andExpect(status().isOk())
+	                .andExpect(jsonPath("$.userId", is("1")))
+	                .andExpect(jsonPath("$.firstName", is("John")))
+	                .andExpect(jsonPath("$.lastName", is("Doe")));
+	    }
+	    
+	    @Test
+	    public void testGetUserProfile() throws Exception {
+	        UserInfoDto userInfoDto = new UserInfoDto("1", "John", "Doe");
+	        Mockito.when(userInfoService.getUserProfile("loginId")).thenReturn(userInfoDto);
+
+	        mockMvc.perform(MockMvcRequestBuilders.get("/api/userinfo/profile/loginId")
+	                .accept(MediaType.APPLICATION_JSON))
+	                .andExpect(status().isOk())
+	                .andExpect(jsonPath("$.userId", is("1")))
+	                .andExpect(jsonPath("$.firstName", is("John")))
+	                .andExpect(jsonPath("$.lastName", is("Doe")));
+	    }
+	    @Test
+	    public void testAddManager() throws Exception {
+	        UserInfoDto userInfoDto = new UserInfoDto("1", "John", "Doe");
+	        Mockito.when(userInfoService.createUserInfo(Mockito.any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+	        mockMvc.perform(MockMvcRequestBuilders.post("/api/userinfo/add-manager")
+	                .contentType(MediaType.APPLICATION_JSON)
+	                .content(new ObjectMapper().writeValueAsString(userInfoDto)))
+	                .andExpect(status().isOk())
+	                .andExpect(jsonPath("$.userId", is("1")))
+	                .andExpect(jsonPath("$.firstName", is("John")))
+	                .andExpect(jsonPath("$.lastName", is("Doe")));
+	    }
+	    @Test
+	    public void testAddEmployee() throws Exception {
+	        UserInfoDto userInfoDto = new UserInfoDto("1", "John", "Doe");
+	        Mockito.when(userInfoService.createUserInfo1(Mockito.any(UserInfoDto.class))).thenReturn(userInfoDto);
+
+	        mockMvc.perform(MockMvcRequestBuilders.post("/api/userinfo/add-employee")
+	                .contentType(MediaType.APPLICATION_JSON)
+	                .content(new ObjectMapper().writeValueAsString(userInfoDto)))
+	                .andExpect(status().isOk())
+	                .andExpect(jsonPath("$.userId", is("1")))
+	                .andExpect(jsonPath("$.firstName", is("John")))
+	                .andExpect(jsonPath("$.lastName", is("Doe")));
+	    }
+
+
+}

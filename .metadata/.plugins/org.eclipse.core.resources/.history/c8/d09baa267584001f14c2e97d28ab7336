@@ -1,0 +1,108 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class AttendanceRepositoryTest {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private Attendance attendance;
+
+    @BeforeEach
+    public void setUp() {
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        userInfo = userInfoRepository.save(userInfo); // Save and retrieve the entity to ensure the ID is set
+
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+        userLogin = userLoginRepository.save(userLogin); // Save and retrieve the entity to ensure the ID is set
+
+        attendance = new Attendance();
+        attendance.setUserLogin(userLogin);
+        attendance.setCheckIn(new java.sql.Timestamp(System.currentTimeMillis()));
+        attendance.setCheckOut(new java.sql.Timestamp(System.currentTimeMillis() + 3600000)); // 1 hour later
+        attendance.setDate(new java.sql.Date(System.currentTimeMillis()));
+        attendance.setStatus("Signed In");
+        attendance = attendanceRepository.save(attendance); // Save and retrieve the entity to ensure the ID is set
+    }
+
+    @Test
+    public void testFindByUserLogin_LoginId() {
+        List<Attendance> attendances = attendanceRepository.findByUserLogin_LoginId(userLogin.getLoginId());
+        assertThat(attendances).isNotEmpty();
+        assertThat(attendances.get(0).getUserLogin().getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+
+    @Test
+    public void testFindByEmployeeIds() {
+        List<String> employeeIds = List.of(userInfo.getUserId());
+        List<Attendance> attendances = attendanceRepository.findByEmployeeIds(employeeIds);
+        assertThat(attendances).isNotEmpty();
+        assertThat(attendances.get(0).getUserLogin().getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+
+    @Test
+    public void testFindAttendanceRecordsByManager() {
+        List<AttendanceDto> attendanceRecords = attendanceRepository.findAttendanceRecordsByManager(userInfo.getUserId());
+        assertThat(attendanceRecords).isNotEmpty();
+        assertThat(attendanceRecords.get(0).getFirstName()).isEqualTo("John");
+        assertThat(attendanceRecords.get(0).getLastName()).isEqualTo("Doe");
+    }
+
+    @Test
+    public void testFindByUserLoginAndDate() {
+        List<Attendance> attendances = attendanceRepository.findByUserLoginAndDate(userLogin, new java.sql.Date(System.currentTimeMillis()));
+        assertThat(attendances).isNotEmpty();
+        assertThat(attendances.get(0).getUserLogin().getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+
+    @Test
+    public void testFindByUserLoginAndStatus() {
+        List<Attendance> attendances = attendanceRepository.findByUserLoginAndStatus(userLogin.getLoginId(), "Signed In");
+        assertThat(attendances).isNotEmpty();
+        assertThat(attendances.get(0).getStatus()).isEqualTo("Signed In");
+    }
+
+    @Test
+    public void testFindByDateBetween() {
+        LocalDate startDate = LocalDate.now().minusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(1);
+        List<Attendance> attendances = attendanceRepository.findByDateBetween(startDate, endDate);
+        assertThat(attendances).isNotEmpty();
+        assertThat(attendances.get(0).getUserLogin().getUserEmail()).isEqualTo("john.doe@example.com");
+    }
+}

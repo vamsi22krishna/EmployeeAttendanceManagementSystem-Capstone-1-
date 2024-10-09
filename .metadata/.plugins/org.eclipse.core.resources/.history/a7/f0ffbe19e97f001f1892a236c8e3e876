@@ -1,0 +1,97 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.LeaveBalanceDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+
+import jakarta.persistence.EntityNotFoundException;
+
+@Service
+//@Transactional
+public class LeaveBalanceServiceImpl implements LeaveBalanceService {
+
+    @Autowired
+    private LeaveBalanceRepository leaveBalanceRepository;
+    @Autowired
+    private LeaveTypesRepository leaveTypeRepository;
+    
+    @Autowired
+    private ModelMapper modelMapper;
+    
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+//    @Override
+//    public LeaveBalanceDto createLeaveBalance(LeaveBalanceDto leaveBalanceDto) {
+//        LeaveBalance leaveBalance = modelMapper.map(leaveBalanceDto, LeaveBalance.class);
+//        LeaveTypes leaveType = leaveTypeRepository.findById(leaveBalanceDto.getLeaveTypeId())
+//                .orElseThrow(() -> new EntityNotFoundException("LeaveType not found"));
+//        leaveBalance.setLeaveType(leaveType); // Set the fetched LeaveTyp
+//        leaveBalance = leaveBalanceRepository.save(leaveBalance);
+//        return modelMapper.map(leaveBalance, LeaveBalanceDto.class);
+//    }
+    
+    public LeaveBalanceDto createLeaveBalance(LeaveBalanceDto leaveBalanceDto) {
+        LeaveBalance leaveBalance = new LeaveBalance();
+        leaveBalance.setBalanceId(leaveBalanceDto.getBalanceId());
+        leaveBalance.setUserLogin(userLoginRepository.findById(leaveBalanceDto.getLoginId()).orElseThrow(() -> new RuntimeException("UserLogin not found")));
+        leaveBalance.setLeaveType(leaveTypeRepository.findById(leaveBalanceDto.getLeaveTypeId()).orElseThrow(() -> new RuntimeException("LeaveType not found")));
+        leaveBalance.setTotalLeaves(leaveBalanceDto.getTotalLeaves());
+        leaveBalance.setUsedLeaves(leaveBalanceDto.getUsedLeaves());
+        LeaveBalance savedLeaveBalance = leaveBalanceRepository.save(leaveBalance);
+        return convertToDto(savedLeaveBalance);
+    }
+    
+    private LeaveBalanceDto convertToDto(LeaveBalance leaveBalance) {
+        LeaveBalanceDto dto = new LeaveBalanceDto();
+        dto.setBalanceId(leaveBalance.getBalanceId());
+        dto.setLoginId(leaveBalance.getUserLogin().getLoginId());
+        dto.setLeaveTypeId(leaveBalance.getLeaveType().getLeaveTypeId());
+        dto.setTotalLeaves(leaveBalance.getTotalLeaves());
+        dto.setUsedLeaves(leaveBalance.getUsedLeaves());
+        return dto;
+    }
+    
+    public List<LeaveBalanceDto> getAllLeaveBalances() {
+        return leaveBalanceRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public LeaveBalanceDto getLeaveBalanceById(String balanceId) {
+        LeaveBalance leaveBalance = leaveBalanceRepository.findById(balanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave balance not found with id: " + balanceId));
+        return modelMapper.map(leaveBalance, LeaveBalanceDto.class);
+    }
+
+    @Override
+    public LeaveBalanceDto updateLeaveBalance(String balanceId, LeaveBalanceDto leaveBalanceDto) {
+        LeaveBalance existingLeaveBalance = leaveBalanceRepository.findById(balanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave balance not found with id: " + balanceId));
+        
+        modelMapper.map(leaveBalanceDto, existingLeaveBalance);
+        existingLeaveBalance = leaveBalanceRepository.save(existingLeaveBalance);
+        return modelMapper.map(existingLeaveBalance, LeaveBalanceDto.class);
+    }
+
+    @Override
+    public void deleteLeaveBalance(String balanceId) {
+        LeaveBalance leaveBalance = leaveBalanceRepository.findById(balanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave balance not found with id: " + balanceId));
+        leaveBalanceRepository.delete(leaveBalance);
+    }
+}

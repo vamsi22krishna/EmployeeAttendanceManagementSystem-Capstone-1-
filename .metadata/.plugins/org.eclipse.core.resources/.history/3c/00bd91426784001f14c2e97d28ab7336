@@ -1,0 +1,50 @@
+package com.attendencemanagementsystem.repository;
+
+
+import com.attendencemanagementsystem.entity.UserInfo;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class UserInfoRepositoryTest {
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Test
+    public void testSaveUserInfo() {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("1");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        UserInfo savedUserInfo = userInfoRepository.save(userInfo);
+        assertNotNull(savedUserInfo);
+        assertEquals("John", savedUserInfo.getFirstName());
+    }
+
+    @Test
+    public void testFindById() {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("1");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        userInfoRepository.save(userInfo);
+
+        Optional<UserInfo> foundUserInfo = userInfoRepository.findById("1");
+        assertNotNull(foundUserInfo);
+        assertEquals("John", foundUserInfo.get().getFirstName());
+    }
+
+
+}

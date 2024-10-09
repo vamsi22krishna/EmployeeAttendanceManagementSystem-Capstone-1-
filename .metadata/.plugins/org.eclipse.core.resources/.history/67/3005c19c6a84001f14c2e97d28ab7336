@@ -1,0 +1,107 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.entity.UserRole;
+import com.attendencemanagementsystem.repository.UserRoleRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ContextConfiguration;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@SpringBootTest
+@ContextConfiguration(classes = {UserRoleServiceTest.Config.class})
+public class UserRoleServiceTest {
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
+
+    @InjectMocks
+    private UserRoleServiceImpl userRoleService;
+
+    @Configuration
+    static class Config {
+        @Bean
+        public ModelMapper modelMapper() {
+            return new ModelMapper();
+        }
+    }
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    public void testCreateUserRole() {
+        UserRole userRole = new UserRole();
+        userRole.setUserRoleId("1");
+        userRole.setLoginId("1");
+        userRole.setRole("Admin");
+
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
+
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId("1");
+        userRoleDto.setRole("Admin");
+
+        UserRoleDto createdUserRole = userRoleService.createUserRole(userRoleDto);
+        assertEquals("1", createdUserRole.getLoginId());
+        assertEquals("Admin", createdUserRole.getRole());
+    }
+
+    @Test
+    public void testGetUserRoleById() {
+        UserRole userRole = new UserRole();
+        userRole.setUserRoleId("1");
+        userRole.setLoginId("1");
+        userRole.setRole("Admin");
+
+        when(userRoleRepository.findById("1")).thenReturn(Optional.of(userRole));
+
+        UserRoleDto userRoleDto = userRoleService.getUserRoleById("1");
+        assertEquals("1", userRoleDto.getLoginId());
+        assertEquals("Admin", userRoleDto.getRole());
+    }
+
+    @Test
+    public void testUpdateUserRole() {
+        UserRole userRole = new UserRole();
+        userRole.setUserRoleId("1");
+        userRole.setLoginId("1");
+        userRole.setRole("Admin");
+
+        when(userRoleRepository.findById("1")).thenReturn(Optional.of(userRole));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
+
+        UserRoleDto userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId("1");
+        userRoleDto.setRole("User");
+
+        UserRoleDto updatedUserRole = userRoleService.updateUserRole("1", userRoleDto);
+        assertEquals("User", updatedUserRole.getRole());
+    }
+
+    @Test
+    public void testDeleteUserRole() {
+        UserRole userRole = new UserRole();
+        userRole.setUserRoleId("1");
+
+        when(userRoleRepository.findById("1")).thenReturn(Optional.of(userRole));
+        Mockito.doNothing().when(userRoleRepository).delete(userRole);
+
+        userRoleService.deleteUserRole("1");
+        Mockito.verify(userRoleRepository, Mockito.times(1)).delete(userRole);
+    }
+}

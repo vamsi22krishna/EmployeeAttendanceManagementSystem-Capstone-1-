@@ -1,0 +1,51 @@
+package com.attendencemanagementsystem.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.attendencemanagementsystem.dto.LeaveBalanceDto;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/leavebalances")
+public class LeaveBalanceController {
+
+    @Autowired
+    private LeaveBalanceService leaveBalanceService;
+
+    @PostMapping("add")
+    public ResponseEntity<LeaveBalanceDto> createLeaveBalance(@RequestBody LeaveBalanceDto leaveBalanceDto) {
+        return ResponseEntity.ok(leaveBalanceService.createLeaveBalance(leaveBalanceDto));
+    }
+    @GetMapping
+    public ResponseEntity<List<LeaveBalanceDto>> getAllLeaveBalances() {
+        return ResponseEntity.ok(leaveBalanceService.getAllLeaveBalances());
+    }
+    
+    @GetMapping("/{balanceId}")
+    public ResponseEntity<LeaveBalanceDto> getLeaveBalanceById(@PathVariable String balanceId) {
+        return ResponseEntity.ok(leaveBalanceService.getLeaveBalanceById(balanceId));
+    }
+
+    @PutMapping("/{balanceId}")
+    public ResponseEntity<LeaveBalanceDto> updateLeaveBalance(@PathVariable String balanceId, @RequestBody LeaveBalanceDto leaveBalanceDto) {
+        return ResponseEntity.ok(leaveBalanceService.updateLeaveBalance(balanceId, leaveBalanceDto));
+    }
+
+    @DeleteMapping("/{balanceId}")
+    public ResponseEntity<Void> deleteLeaveBalance(@PathVariable String balanceId) {
+        leaveBalanceService.deleteLeaveBalance(balanceId);
+        return ResponseEntity.noContent().build();
+    }
+}

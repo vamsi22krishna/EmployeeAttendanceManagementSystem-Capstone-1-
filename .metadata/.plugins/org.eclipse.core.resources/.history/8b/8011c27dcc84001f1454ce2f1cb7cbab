@@ -1,0 +1,19 @@
+package com.attendencemanagementsystem.service;
+
+
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+
+
+public interface AttendanceService {
+    AttendanceDto createAttendance(AttendanceDto attendanceDto);
+    AttendanceDto getAttendanceById(String attendanceId);
+    AttendanceDto updateAttendance(String attendanceId, AttendanceDto attendanceDto);
+    void deleteAttendance(String attendanceId);
+    public AttendanceDto logCheckIn(String loginId);
+    public AttendanceDto logCheckOut(String loginId);
+    public List<AttendanceDto> getAttendanceRecords(String loginId);
+	List<AttendanceDto> getAttendanceByManager(String managerId);
+}

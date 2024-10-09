@@ -1,0 +1,133 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.controller.LeaveTypesController;
+import com.attendencemanagementsystem.dto.LeaveTypesDto;
+import com.attendencemanagementsystem.service.LeaveTypesService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(LeaveTypesController.class)
+public class LeaveTypesControllerTest {
+
+    @InjectMocks
+    private LeaveTypesController leaveTypesController;
+
+    @MockBean
+    private LeaveTypesService leaveTypesService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(leaveTypesController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateLeaveType() throws Exception {
+        LeaveTypesDto leaveTypesDto = new LeaveTypesDto();
+        leaveTypesDto.setLeaveType("Annual Leave");
+        leaveTypesDto.setMaxLeaves(20);
+
+        when(leaveTypesService.createLeaveType(any(LeaveTypesDto.class))).thenReturn(leaveTypesDto);
+
+        mockMvc.perform(post("/api/leavetypes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(leaveTypesDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaveType").value("Annual Leave"))
+                .andExpect(jsonPath("$.maxLeaves").value(20));
+    }
+
+    @Test
+    public void testGetAllLeaveTypes() throws Exception {
+        LeaveTypesDto leaveTypesDto = new LeaveTypesDto();
+        leaveTypesDto.setLeaveType("Annual Leave");
+        leaveTypesDto.setMaxLeaves(20);
+
+        when(leaveTypesService.getAllLeaveTypes()).thenReturn(List.of(leaveTypesDto));
+
+        mockMvc.perform(get("/api/leavetypes")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaveType").value("Sick Leave"))
+                .andExpect(jsonPath("$.maxLeaves").value(20));
+    }
+
+    @Test
+    public void testGetLeaveTypeById() throws Exception {
+        String leaveTypeId = "LT123";
+        LeaveTypesDto leaveTypesDto = new LeaveTypesDto();
+        leaveTypesDto.setLeaveTypeId(leaveTypeId);
+        leaveTypesDto.setLeaveType("Annual Leave");
+        leaveTypesDto.setMaxLeaves(20);
+
+        when(leaveTypesService.getLeaveTypeById(leaveTypeId)).thenReturn(leaveTypesDto);
+
+        mockMvc.perform(get("/api/leavetypes/{leaveTypeId}", leaveTypeId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaveTypeId").value(leaveTypeId))
+                .andExpect(jsonPath("$.leaveType").value("Annual Leave"))
+                .andExpect(jsonPath("$.maxLeaves").value(20));
+    }
+
+    @Test
+    public void testDeleteLeaveType() throws Exception {
+        String leaveTypeId = "LT123";
+
+        doNothing().when(leaveTypesService).deleteLeaveType(leaveTypeId);
+
+        mockMvc.perform(delete("/api/leavetypes/{leaveTypeId}", leaveTypeId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testCheckLeaveTypeExists() throws Exception {
+        String leaveType = "Annual Leave";
+
+        when(leaveTypesService.checkLeaveTypeExists(leaveType)).thenReturn(true);
+
+        mockMvc.perform(get("/api/leavetypes/exists")
+                .param("leaveType", leaveType)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(true));
+    }
+
+    @Test
+    public void testUpdateLeaveType() throws Exception {
+        LeaveTypesDto leaveTypesDto = new LeaveTypesDto();
+        leaveTypesDto.setLeaveTypeId("LT123");
+        leaveTypesDto.setLeaveType("Annual Leave");
+        leaveTypesDto.setMaxLeaves(20);
+
+        doNothing().when(leaveTypesService).updateLeaveType(any(LeaveTypesDto.class));
+
+        mockMvc.perform(put("/api/leavetypes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(leaveTypesDto)))
+                .andExpect(status().isOk());
+    }
+}

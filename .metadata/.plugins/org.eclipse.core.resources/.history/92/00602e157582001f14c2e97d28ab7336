@@ -1,0 +1,5 @@
+package com.attendencemanagementsystem.service;
+
+public interface AttendanceReportService {
+
+}

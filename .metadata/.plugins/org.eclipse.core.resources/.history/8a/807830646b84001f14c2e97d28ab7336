@@ -1,0 +1,59 @@
+package com.attendencemanagementsystem.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import java.sql.Date;
+import java.util.List;
+
+@SpringBootTest
+public class UserInfoTest {
+
+    @Autowired
+    private UserInfo userInfo;
+
+    @MockBean
+    private UserInfo manager;
+
+    @BeforeEach
+    public void setUp() {
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new Date());
+        userInfo.setManager(manager);
+    }
+
+    @Test
+    public void testGenerateId() {
+        userInfo.generateId();
+        assertThat(userInfo.getUserId()).isNotNull();
+        assertThat(userInfo.getUserId()).startsWith("UI");
+    }
+
+    @Test
+    public void testUserInfoFields() {
+        assertThat(userInfo.getFirstName()).isEqualTo("John");
+        assertThat(userInfo.getLastName()).isEqualTo("Doe");
+        assertThat(userInfo.getAddress()).isEqualTo("123 Main St");
+        assertThat(userInfo.getSalary()).isEqualTo(50000.0f);
+        assertThat(userInfo.getDOB()).isNotNull();
+        assertThat(userInfo.getManager()).isEqualTo(manager);
+    }
+
+    @Test
+    public void testSubordinates() {
+        UserInfo subordinate = new UserInfo();
+        subordinate.setManager(userInfo);
+        userInfo.setSubordinates(List.of(subordinate));
+        
+        assertThat(userInfo.getSubordinates()).isNotNull();
+        assertThat(userInfo.getSubordinates()).hasSize(1);
+        assertThat(userInfo.getSubordinates().get(0).getManager()).isEqualTo(userInfo);
+    }
+}

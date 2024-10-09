@@ -1,0 +1,188 @@
+package com.attendencemanagementsystem.serviceImpl;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.attendencemanagementsystem.dto.AttendanceDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+
+@SpringBootTest
+public class AttendanceServiceImplTest {
+
+    @InjectMocks
+    private AttendanceServiceImpl attendanceService;
+
+    @Mock
+    private AttendanceRepository attendanceRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private Attendance attendance;
+    private AttendanceDto attendanceDto;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        userInfo = new UserInfo();
+        userInfo.setUserId("UI123");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        userLogin = new UserLogin();
+        userLogin.setLoginId("UL123");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+
+        attendance = new Attendance();
+        attendance.setAttendanceId("AT123");
+        attendance.setUserLogin(userLogin);
+        attendance.setCheckIn(new Timestamp(System.currentTimeMillis()));
+        attendance.setCheckOut(new Timestamp(System.currentTimeMillis() + 3600000)); // 1 hour later
+        attendance.setDate(new Date(System.currentTimeMillis()));
+        attendance.setStatus("Signed In");
+
+        attendanceDto = new AttendanceDto();
+        attendanceDto.setAttendanceId("AT123");
+        attendanceDto.setLoginId("UL123");
+        attendanceDto.setCheckIn(new Timestamp(System.currentTimeMillis()));
+        attendanceDto.setCheckOut(new Timestamp(System.currentTimeMillis() + 3600000)); // 1 hour later
+        attendanceDto.setDate(new Date(System.currentTimeMillis()));
+        attendanceDto.setStatus("Signed In");
+    }
+
+    @Test
+    public void testCreateAttendance() {
+        when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(AttendanceDto.class), eq(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        AttendanceDto createdAttendance = attendanceService.createAttendance(attendanceDto);
+
+        assertThat(createdAttendance).isNotNull();
+        assertThat(createdAttendance.getAttendanceId()).isEqualTo("AT123");
+    }
+
+    @Test
+    public void testGetAttendanceById() {
+        String attendanceId = "AT123";
+
+        when(attendanceRepository.findById(attendanceId)).thenReturn(Optional.of(attendance));
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        AttendanceDto foundAttendance = attendanceService.getAttendanceById(attendanceId);
+
+        assertThat(foundAttendance).isNotNull();
+        assertThat(foundAttendance.getAttendanceId()).isEqualTo(attendanceId);
+    }
+
+    @Test
+    public void testUpdateAttendance() {
+        String attendanceId = "AT123";
+        AttendanceDto updatedAttendanceDto = new AttendanceDto();
+        updatedAttendanceDto.setStatus("Signed Out");
+
+        when(attendanceRepository.findById(attendanceId)).thenReturn(Optional.of(attendance));
+        when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(AttendanceDto.class), eq(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(updatedAttendanceDto);
+
+        AttendanceDto updatedAttendance = attendanceService.updateAttendance(attendanceId, updatedAttendanceDto);
+
+        assertThat(updatedAttendance).isNotNull();
+        assertThat(updatedAttendance.getStatus()).isEqualTo("Signed Out");
+    }
+
+    @Test
+    public void testDeleteAttendance() {
+        String attendanceId = "AT123";
+
+        when(attendanceRepository.findById(attendanceId)).thenReturn(Optional.of(attendance));
+
+        attendanceService.deleteAttendance(attendanceId);
+
+        verify(attendanceRepository, times(1)).delete(attendance);
+    }
+
+    @Test
+    public void testLogCheckIn() {
+        String loginId = "UL123";
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(userLogin));
+        when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        AttendanceDto checkInAttendance = attendanceService.logCheckIn(loginId);
+
+        assertThat(checkInAttendance).isNotNull();
+        assertThat(checkInAttendance.getStatus()).isEqualTo("Signed In");
+    }
+
+    @Test
+    public void testLogCheckOut() {
+        String loginId = "UL123";
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(userLogin));
+        when(attendanceRepository.findByUserLoginAndStatus(loginId, "Signed In")).thenReturn(List.of(attendance));
+        when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        AttendanceDto checkOutAttendance = attendanceService.logCheckOut(loginId);
+
+        assertThat(checkOutAttendance).isNotNull();
+        assertThat(checkOutAttendance.getStatus()).isEqualTo("SignedOut");
+    }
+
+    @Test
+    public void testGetAttendanceRecords() {
+        String loginId = "UL123";
+
+        when(attendanceRepository.findByUserLogin_LoginId(loginId)).thenReturn(List.of(attendance));
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceRecords(loginId);
+
+        assertThat(attendanceRecords).isNotNull();
+        assertThat(attendanceRecords).hasSize(1);
+    }
+
+    @Test
+    public void testGetAttendanceByManager() {
+        String managerId = "UI123";
+        List<String> employeeIds = List.of("UL123");
+
+        when(userLoginRepository.findEmployeesByManagerId(managerId)).thenReturn(employeeIds);
+        when(attendanceRepository.findByEmployeeIds(employeeIds)).thenReturn(List.of(attendance));
+        when(modelMapper.map(any(Attendance.class), eq(AttendanceDto.class))).thenReturn(attendanceDto);
+
+        List<AttendanceDto> attendanceByManager = attendanceService.getAttendanceByManager(managerId);
+
+        assertThat(attendanceByManager).isNotNull();
+        assertThat(attendanceByManager).hasSize(1);
+    }
+}

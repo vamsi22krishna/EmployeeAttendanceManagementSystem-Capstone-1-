@@ -1,0 +1,69 @@
+package com.attendencemanagementsystem.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+import com.attendencemanagementsystem.service.UserLoginService;
+
+import java.util.List;
+
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/userlogin")
+public class UserLoginController {
+
+    @Autowired
+    private UserLoginService userLoginService;
+    
+    @Autowired
+    private LeaveBalanceService leaveBalanceService;
+
+    @PostMapping
+    public ResponseEntity<UserLoginDto> createUserLogin(@RequestBody UserLoginDto userLoginDto) {
+    	
+        return ResponseEntity.ok(userLoginService.createUserLogin(userLoginDto));
+    }
+
+    
+//    @PostMapping
+//    public ResponseEntity<UserLoginDto> createUserLogin(@RequestBody UserLoginDto userLoginDto) {
+//        // Ensure userId is provided
+//        if (userLoginDto.getUserId() == null) {
+//            return ResponseEntity.badRequest().body("User ID is required");
+//        }
+//        UserLoginDto createdUserLogin = userLoginService.createUserLogin(userLoginDto);
+//        return ResponseEntity.ok(createdUserLogin);
+//    }
+
+    @GetMapping("/{loginId}")
+    public ResponseEntity<UserLoginDto> getUserLoginById(@PathVariable String loginId) {
+        return ResponseEntity.ok(userLoginService.getUserLoginById(loginId));
+    }
+
+    @PutMapping("/{loginId}")
+    public ResponseEntity<UserLoginDto> updateUserLogin(@PathVariable String loginId, @RequestBody UserLoginDto userLoginDto) {
+        return ResponseEntity.ok(userLoginService.updateUserLogin(loginId, userLoginDto));
+    }
+
+    @DeleteMapping("/{loginId}")
+    public ResponseEntity<Void> deleteUserLogin(@PathVariable String loginId) {
+        userLoginService.deleteUserLogin(loginId);
+        return ResponseEntity.noContent().build();
+    }
+    
+    @PostMapping("/login")
+    public ResponseEntity<UserLoginDto> login(@RequestBody UserLoginDto userLoginDto) {
+        UserLoginDto loggedInUser = userLoginService.login1(userLoginDto);
+        return ResponseEntity.ok(loggedInUser);
+    }
+    @GetMapping("/exists/{email}")
+    public ResponseEntity<Boolean> checkEmailExists(@PathVariable String email) {
+        boolean exists = userLoginService.emailExists(email);
+        return ResponseEntity.ok(exists);
+    }
+    
+}

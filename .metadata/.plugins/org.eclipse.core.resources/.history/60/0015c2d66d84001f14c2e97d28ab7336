@@ -1,0 +1,155 @@
+package com.attendencemanagementsystem.serviceImpl;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.repository.UserRoleRepository;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+
+@SpringBootTest
+public class UserInfoServiceImplTest {
+
+    @InjectMocks
+    private UserInfoServiceImpl userInfoService;
+
+    @Mock
+    private UserInfoRepository userInfoRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    @Mock
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Mock
+    private LeaveBalanceRepository leaveBalanceRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    public void testCreateUserInfo() {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+        userInfoDto.setAddress("123 Main St");
+        userInfoDto.setSalary(50000.0f);
+        userInfoDto.setDOB(new java.sql.Date(System.currentTimeMillis()));
+
+        UserInfo userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+
+        when(userInfoRepository.save(any(UserInfo.class))).thenReturn(userInfo);
+        when(modelMapper.map(any(UserInfoDto.class), eq(UserInfo.class))).thenReturn(userInfo);
+        when(modelMapper.map(any(UserInfo.class), eq(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        UserInfoDto createdUserInfo = userInfoService.createUserInfo(userInfoDto);
+
+        assertThat(createdUserInfo).isNotNull();
+        assertThat(createdUserInfo.getFirstName()).isEqualTo("John");
+        assertThat(createdUserInfo.getLastName()).isEqualTo("Doe");
+    }
+
+    @Test
+    public void testGetUserInfoById() {
+        String userId = "UI123";
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId(userId);
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        when(userInfoRepository.findById(userId)).thenReturn(Optional.of(userInfo));
+        when(modelMapper.map(any(UserInfo.class), eq(UserInfoDto.class))).thenReturn(new UserInfoDto());
+
+        UserInfoDto userInfoDto = userInfoService.getUserInfoById(userId);
+
+        assertThat(userInfoDto).isNotNull();
+        assertThat(userInfoDto.getFirstName()).isEqualTo("John");
+        assertThat(userInfoDto.getLastName()).isEqualTo("Doe");
+    }
+
+    @Test
+    public void testUpdateUserInfo() {
+        String userId = "UI123";
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        UserInfo existingUserInfo = new UserInfo();
+        existingUserInfo.setUserId(userId);
+        existingUserInfo.setFirstName("Jane");
+        existingUserInfo.setLastName("Smith");
+
+        when(userInfoRepository.findById(userId)).thenReturn(Optional.of(existingUserInfo));
+        when(userInfoRepository.save(any(UserInfo.class))).thenReturn(existingUserInfo);
+        when(modelMapper.map(any(UserInfoDto.class), eq(UserInfo.class))).thenReturn(existingUserInfo);
+        when(modelMapper.map(any(UserInfo.class), eq(UserInfoDto.class))).thenReturn(userInfoDto);
+
+        UserInfoDto updatedUserInfo = userInfoService.updateUserInfo(userId, userInfoDto);
+
+        assertThat(updatedUserInfo).isNotNull();
+        assertThat(updatedUserInfo.getFirstName()).isEqualTo("John");
+        assertThat(updatedUserInfo.getLastName()).isEqualTo("Doe");
+    }
+
+    @Test
+    public void testDeleteUserInfo() {
+        String userId = "UI123";
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId(userId);
+
+        when(userInfoRepository.findById(userId)).thenReturn(Optional.of(userInfo));
+
+        userInfoService.deleteUserInfo(userId);
+
+        verify(userInfoRepository, times(1)).delete(userInfo);
+    }
+
+    @Test
+    public void testGetUserProfile() {
+        String loginId = "UL123";
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId(loginId);
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("UI123");
+        userLogin.setUserInfo(userInfo);
+
+        when(userLoginRepository.findById(loginId)).thenReturn(Optional.of(userLogin));
+        when(userInfoRepository.findByUserId("UI123")).thenReturn(userInfo);
+        when(modelMapper.map(any(UserInfo.class), eq(UserInfoDto.class))).thenReturn(new UserInfoDto());
+
+        UserInfoDto userInfoDto = userInfoService.getUserProfile(loginId);
+
+        assertThat(userInfoDto).isNotNull();
+        assertThat(userInfoDto.getUserId()).isEqualTo("UI123");
+    }
+}

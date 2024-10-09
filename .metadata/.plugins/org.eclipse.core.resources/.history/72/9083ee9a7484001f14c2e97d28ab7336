@@ -1,0 +1,102 @@
+package com.attendencemanagementsystem.repository;
+
+import com.attendencemanagementsystem.entity.UserLogin;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class UserLoginRepositoryTest {
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Test
+    public void testSaveUserLogin() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("1");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password");
+
+        UserLogin savedUserLogin = userLoginRepository.save(userLogin);
+        assertNotNull(savedUserLogin);
+        assertEquals("john.doe@example.com", savedUserLogin.getUserEmail());
+    }
+
+    @Test
+    public void testFindById() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("UL07489");
+        userLogin.setUserEmail("dhanraj.manager@xylem.com");
+        userLogin.setPassword("varun@123");
+
+        userLoginRepository.save(userLogin);
+
+        Optional<UserLogin> foundUserLogin = userLoginRepository.findById("UL07489");
+        assertNotNull(foundUserLogin);
+        assertEquals("dhanraj.manager@xylem.com", foundUserLogin.get().getUserEmail());
+    }
+
+    @Test
+    public void testDeleteUserLogin() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("1");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password");
+
+        userLoginRepository.save(userLogin);
+        userLoginRepository.deleteById("1");
+
+        Optional<UserLogin> deletedUserLogin = userLoginRepository.findById("1");
+        assertEquals(Optional.empty(), deletedUserLogin);
+    }
+
+    @Test
+    public void testFindByEmail() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("1");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password");
+
+        userLoginRepository.save(userLogin);
+
+        Optional<UserLogin> foundUserLogin = userLoginRepository.findByEmail("john.doe@example.com");
+        assertNotNull(foundUserLogin);
+        assertEquals("john.doe@example.com", foundUserLogin.get().getUserEmail());
+    }
+
+    @Test
+    public void testFindByUserEmailAndPassword() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("1");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password");
+
+        userLoginRepository.save(userLogin);
+
+        UserLogin foundUserLogin = userLoginRepository.findByUserEmailAndPassword("john.doe@example.com", "password");
+        assertNotNull(foundUserLogin);
+        assertEquals("john.doe@example.com", foundUserLogin.getUserEmail());
+    }
+
+    @Test
+    public void testExistsByUserEmail() {
+        UserLogin userLogin = new UserLogin();
+        userLogin.setLoginId("1");
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password");
+
+        userLoginRepository.save(userLogin);
+
+        boolean exists = userLoginRepository.existsByUserEmail("john.doe@example.com");
+        assertEquals(true, exists);
+    }
+}

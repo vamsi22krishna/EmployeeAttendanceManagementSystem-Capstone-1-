@@ -1,0 +1,15 @@
+package com.attendencemanagementsystem.repository;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance, String> {
+
+	  Optional<LeaveBalance> findByUserLoginAndLeaveType(UserLogin userLogin, LeaveTypes leaveType);
+	  Optional<LeaveBalance> findByUserLogin_LoginIdAndLeaveType_LeaveTypeId(String loginId, String leaveTypeId);
+}

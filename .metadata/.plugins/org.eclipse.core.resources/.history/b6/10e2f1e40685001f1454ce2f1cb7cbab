@@ -1,0 +1,148 @@
+package com.attendencemanagementsystem.controller;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.ChangePasswordDto;
+import com.attendencemanagementsystem.dto.UserLoginDto;
+import com.attendencemanagementsystem.service.LeaveBalanceService;
+import com.attendencemanagementsystem.service.UserLoginService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(UserLoginController.class)
+public class UserLoginControllerTest {
+
+    @InjectMocks
+    private UserLoginController userLoginController;
+
+    @MockBean
+    private UserLoginService userLoginService;
+
+    @MockBean
+    private LeaveBalanceService leaveBalanceService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(userLoginController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testCreateUserLogin() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password123");
+
+        when(userLoginService.createUserLogin(any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(post("/api/userlogin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userLoginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail").value("john.doe@example.com"))
+                .andExpect(jsonPath("$.password").value("password123"));
+    }
+
+    @Test
+    public void testGetUserLoginById() throws Exception {
+        String loginId = "UL123";
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setLoginId(loginId);
+        userLoginDto.setUserEmail("john.doe@example.com");
+
+        when(userLoginService.getUserLoginById(loginId)).thenReturn(userLoginDto);
+
+        mockMvc.perform(get("/api/userlogin/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value(loginId))
+                .andExpect(jsonPath("$.userEmail").value("john.doe@example.com"));
+    }
+
+    @Test
+    public void testUpdateUserLogin() throws Exception {
+        String loginId = "UL123";
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("newpassword123");
+
+        when(userLoginService.updateUserLogin(eq(loginId), any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(put("/api/userlogin/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userLoginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail").value("john.doe@example.com"))
+                .andExpect(jsonPath("$.password").value("newpassword123"));
+    }
+
+    @Test
+    public void testDeleteUserLogin() throws Exception {
+        String loginId = "UL123";
+
+        doNothing().when(userLoginService).deleteUserLogin(loginId);
+
+        mockMvc.perform(delete("/api/userlogin/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testLogin() throws Exception {
+        UserLoginDto userLoginDto = new UserLoginDto();
+        userLoginDto.setUserEmail("john.doe@example.com");
+        userLoginDto.setPassword("password123");
+
+        when(userLoginService.login1(any(UserLoginDto.class))).thenReturn(userLoginDto);
+
+        mockMvc.perform(post("/api/userlogin/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userLoginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userEmail").value("john.doe@example.com"))
+                .andExpect(jsonPath("$.password").value("password123"));
+    }
+
+    @Test
+    public void testCheckEmailExists() throws Exception {
+        String email = "john.doe@example.com";
+
+        when(userLoginService.emailExists(email)).thenReturn(true);
+
+        mockMvc.perform(get("/api/userlogin/exists/{email}", email)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(true));
+    }
+
+    @Test
+    public void testChangePassword() throws Exception {
+        ChangePasswordDto changePasswordDto = new ChangePasswordDto();
+        changePasswordDto.setEmail("john.doe@example.com");
+        changePasswordDto.setNewPassword("newpassword123");
+
+        doNothing().when(userLoginService).changePassword(anyString(), anyString());
+
+        mockMvc.perform(post("/api/userlogin/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(changePasswordDto)))
+                .andExpect(status().isOk());
+    }
+}

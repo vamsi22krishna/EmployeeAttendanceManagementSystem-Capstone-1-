@@ -1,0 +1,31 @@
+package com.attendencemanagementsystem.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+public class LeaveTypesTest {
+
+    private LeaveTypes leaveTypes;
+
+    @BeforeEach
+    public void setUp() {
+        leaveTypes = new LeaveTypes();
+        leaveTypes.setLeaveType("Annual Leave");
+        leaveTypes.setMaxLeaves(20);
+    }
+
+    @Test
+    public void testGenerateId() {
+        leaveTypes.generateId();
+        assertThat(leaveTypes.getLeaveTypeId()).isNotNull();
+        assertThat(leaveTypes.getLeaveTypeId()).startsWith("LT");
+    }
+
+    @Test
+    public void testLeaveTypesFields() {
+        assertThat(leaveTypes.getLeaveType()).isEqualTo("Annual Leave");
+        assertThat(leaveTypes.getMaxLeaves()).isEqualTo(20);
+    }
+}

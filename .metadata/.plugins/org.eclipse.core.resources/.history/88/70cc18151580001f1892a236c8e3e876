@@ -1,0 +1,18 @@
+package com.attendencemanagementsystem.service;
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.AttendanceCorrectionDto;
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+public interface AttendanceCorrectionService {
+    AttendanceCorrectionDto createAttendanceCorrection(AttendanceCorrectionDto attendanceCorrectionDto);
+    AttendanceCorrectionDto getAttendanceCorrectionById(String correctionId);
+    AttendanceCorrectionDto updateAttendanceCorrection(String correctionId, AttendanceCorrectionDto attendanceCorrectionDto);
+    void deleteAttendanceCorrection(String correctionId);
+    
+    public List<AttendanceCorrection> getCorrectionsByUser(UserLogin userLogin);
+    public AttendanceCorrection saveCorrection(AttendanceCorrection correction);
+    public AttendanceCorrection updateCorrectionStatus(String correctionId, String status);
+}

@@ -1,0 +1,15 @@
+package com.attendencemanagementsystem.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+public interface AttendanceCorrectionRepository extends JpaRepository<AttendanceCorrection, String> {
+	
+	List<AttendanceCorrection> findByUserLogin(UserLogin userLogin);
+	List<AttendanceCorrection> findByUserLogin_UserInfo_Manager(UserInfo manager);
+}

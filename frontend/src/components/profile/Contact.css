@@ -1,0 +1,33 @@
+/* ContactPage.css */
+.contact-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    /* background-color: #f4f4f9; */
+  }
+  
+  .contact-paper {
+    padding: 40px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .contact-paper h4 {
+    color: #134B70;
+    margin-bottom: 20px;
+  }
+  
+  .contact-button {
+    margin-top: 20px;
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  .contact-button:hover {
+    background-color: #0056b3;
+  }
+  

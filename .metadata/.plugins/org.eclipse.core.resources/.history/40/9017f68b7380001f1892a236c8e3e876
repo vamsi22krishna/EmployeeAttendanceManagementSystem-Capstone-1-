@@ -1,0 +1,140 @@
+package com.attendencemanagementsystem.entity;
+
+
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
+import com.attendencemanagementsystem.util.CustomPrefixIdentifierGenerator;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@Entity
+@Table(name = "leave_requests")
+public class LeaveRequest {
+    @Id
+    private String leaveId;
+
+    @ManyToOne
+    @JoinColumn(name = "login_id", nullable = false)
+    private UserLogin userLogin;
+
+    @ManyToOne
+    @JoinColumn(name = "leave_type_id", nullable = false)
+    private LeaveTypes leaveType;
+
+    @Column(nullable = false)
+    private Timestamp startDate;
+
+    @Column(nullable = false)
+    private Timestamp endDate;
+
+    @Column(nullable = false)
+    private String startSession;
+
+    @Column(nullable = false)
+    private String endSession;
+
+    @Column(nullable = false)
+    private String status = "Pending";
+
+    @Column(nullable = false)
+    private String reason;
+
+    @Column(nullable = false)
+    private double numberOfLeaves;
+
+    @PrePersist
+    public void generateId() {
+        this.leaveId = CustomPrefixIdentifierGenerator.generateId("LR");
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void calculateNumberOfLeaves() {
+        LocalDate start = startDate.toLocalDateTime().toLocalDate();
+        LocalDate end = endDate.toLocalDateTime().toLocalDate();
+        long diffInDays = ChronoUnit.DAYS.between(start, end);
+
+        if (start.equals(end)) {
+            // Same day leave
+            if ("First Half".equals(startSession) && "Second Half".equals(endSession)) {
+                this.numberOfLeaves = 1;
+            } else {
+                this.numberOfLeaves = 0.5;
+            }
+        } else {
+            // Multi-day leave
+            if ("First Half".equals(startSession) && "First Half".equals(endSession)) {
+                this.numberOfLeaves = diffInDays + 0.5;
+            } else if ("Second Half".equals(startSession) && "Second Half".equals(endSession)) {
+                this.numberOfLeaves = diffInDays + 0.5;
+            } else if ("Second Half".equals(startSession) && "First Half".equals(endSession)) {
+                this.numberOfLeaves = diffInDays;
+            } else {
+                this.numberOfLeaves = diffInDays + 1;
+            }
+        }
+    }
+}
+
+//
+//import java.sql.Timestamp;
+//
+//import com.attendencemanagementsystem.util.CustomPrefixIdentifierGenerator;
+//
+//import jakarta.persistence.Column;
+//import jakarta.persistence.Entity;
+//import jakarta.persistence.Id;
+//import jakarta.persistence.JoinColumn;
+//import jakarta.persistence.ManyToOne;
+//import jakarta.persistence.PrePersist;
+//import jakarta.persistence.Table;
+//import lombok.Data;
+//import lombok.NoArgsConstructor;
+//
+//@Data
+//@NoArgsConstructor
+//@Entity
+//@Table(name = "leave_requests")
+//public class LeaveRequest {
+//    @Id
+//    private String leaveId;
+//
+//    @ManyToOne
+//    @JoinColumn(name = "login_id", nullable = false)
+//    private UserLogin userLogin;
+//
+//    @ManyToOne
+//    @JoinColumn(name = "leave_type_id", nullable = false)
+//    private LeaveTypes leaveType;
+//
+//    @Column(nullable = false)
+//    private Timestamp startDate;
+//
+//    @Column(nullable = false)
+//    private Timestamp endDate;
+//
+//    private String halfDay;
+//
+//    @Column(nullable = false)
+//    private String status="Pending";
+//
+//    private String reason;
+//
+//    @PrePersist
+//  	public void generateId() {
+//  		this.leaveId = CustomPrefixIdentifierGenerator.generateId("LR");
+//  	}
+//}

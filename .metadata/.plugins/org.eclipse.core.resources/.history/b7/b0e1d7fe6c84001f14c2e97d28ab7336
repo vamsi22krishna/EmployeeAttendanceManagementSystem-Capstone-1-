@@ -1,0 +1,54 @@
+package com.attendencemanagementsystem.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import java.sql.Timestamp;
+
+@SpringBootTest
+public class LeaveRequestTest {
+
+    private LeaveRequest leaveRequest;
+
+    @MockBean
+    private UserLogin userLogin;
+
+    @MockBean
+    private LeaveTypes leaveType;
+
+    @BeforeEach
+    public void setUp() {
+        leaveRequest = new LeaveRequest();
+        leaveRequest.setUserLogin(userLogin);
+        leaveRequest.setLeaveType(leaveType);
+        leaveRequest.setStartDate(new Timestamp(System.currentTimeMillis()));
+        leaveRequest.setEndDate(new Timestamp(System.currentTimeMillis() + 86400000)); // 1 day later
+        leaveRequest.setStartSession("Morning");
+        leaveRequest.setEndSession("Evening");
+        leaveRequest.setStatus("Pending");
+        leaveRequest.setReason("Medical leave");
+        leaveRequest.setNumberOfLeaves(1.0);
+    }
+
+    @Test
+    public void testGenerateId() {
+        leaveRequest.generateId();
+        assertThat(leaveRequest.getLeaveId()).isNotNull();
+        assertThat(leaveRequest.getLeaveId()).startsWith("LR");
+    }
+
+    @Test
+    public void testLeaveRequestFields() {
+        assertThat(leaveRequest.getUserLogin()).isEqualTo(userLogin);
+        assertThat(leaveRequest.getLeaveType()).isEqualTo(leaveType);
+        assertThat(leaveRequest.getStartDate()).isNotNull();
+        assertThat(leaveRequest.getEndDate()).isNotNull();
+        assertThat(leaveRequest.getStartSession()).isEqualTo("Morning");
+        assertThat(leaveRequest.getEndSession()).isEqualTo("Evening");
+        assertThat(leaveRequest.getStatus()).isEqualTo("Pending");
+        assertThat(leaveRequest.getReason()).isEqualTo("Medical leave");
+        assertThat(leaveRequest.getNumberOfLeaves()).isEqualTo(1.0);
+    }
+}

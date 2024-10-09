@@ -1,0 +1,45 @@
+package com.attendencemanagementsystem.entity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import java.sql.Date;
+import java.sql.Timestamp;
+
+@SpringBootTest
+public class AttendanceTest {
+
+    private Attendance attendance;
+
+    @MockBean
+    private UserLogin userLogin;
+
+    @BeforeEach
+    public void setUp() {
+        attendance = new Attendance();
+        attendance.setUserLogin(userLogin);
+        attendance.setCheckIn(new Timestamp(System.currentTimeMillis()));
+        attendance.setCheckOut(new Timestamp(System.currentTimeMillis() + 3600000)); // 1 hour later
+        attendance.setDate(new Date(System.currentTimeMillis()));
+        attendance.setStatus("Present");
+    }
+
+    @Test
+    public void testGenerateId() {
+        attendance.generateId();
+        assertThat(attendance.getAttendanceId()).isNotNull();
+        assertThat(attendance.getAttendanceId()).startsWith("AT");
+    }
+
+    @Test
+    public void testAttendanceFields() {
+        assertThat(attendance.getUserLogin()).isEqualTo(userLogin);
+        assertThat(attendance.getCheckIn()).isNotNull();
+        assertThat(attendance.getCheckOut()).isNotNull();
+        assertThat(attendance.getDate()).isNotNull();
+        assertThat(attendance.getStatus()).isEqualTo("Present");
+    }
+}

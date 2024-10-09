@@ -1,0 +1,65 @@
+package com.attendencemanagementsystem.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.attendencemanagementsystem.dto.LeaveTypesDto;
+import com.attendencemanagementsystem.service.LeaveTypesService;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/leavetypes")
+public class LeaveTypesController {
+
+    @Autowired 
+    private LeaveTypesService leaveTypesService;
+
+    @PostMapping
+    public ResponseEntity<LeaveTypesDto> createLeaveType(@RequestBody LeaveTypesDto leaveTypesDto) {
+        return ResponseEntity.ok(leaveTypesService.createLeaveType(leaveTypesDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<LeaveTypesDto>> getAllLeaveTypes() {
+        return ResponseEntity.ok(leaveTypesService.getAllLeaveTypes());
+    }
+    
+    @GetMapping("/{leaveTypeId}")
+    public ResponseEntity<LeaveTypesDto> getLeaveTypeById(@PathVariable String leaveTypeId) {
+        return ResponseEntity.ok(leaveTypesService.getLeaveTypeById(leaveTypeId));
+    }
+
+//    @PutMapping("/{leaveTypeId}")
+//    public ResponseEntity<LeaveTypesDto> updateLeaveType(@PathVariable String leaveTypeId, @RequestBody LeaveTypesDto leaveTypesDto) {
+//        return ResponseEntity.ok(leaveTypesService.updateLeaveType(leaveTypeId, leaveTypesDto));
+//    }
+
+    @DeleteMapping("/{leaveTypeId}")
+    public ResponseEntity<Void> deleteLeaveType(@PathVariable String leaveTypeId) {
+        leaveTypesService.deleteLeaveType(leaveTypeId);
+        return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> checkLeaveTypeExists(@RequestParam String leaveType) {
+        boolean exists = leaveTypesService.checkLeaveTypeExists(leaveType);
+        return new ResponseEntity<>(exists, HttpStatus.OK);
+    }
+    
+    @PutMapping
+    public ResponseEntity<Void> updateLeaveType(@RequestBody LeaveTypesDto leaveTypeDto) {
+        leaveTypesService.updateLeaveType(leaveTypeDto);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+}

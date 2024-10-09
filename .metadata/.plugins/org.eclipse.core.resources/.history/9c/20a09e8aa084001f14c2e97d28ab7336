@@ -1,0 +1,89 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class AttendanceCorrectionRepositoryTest {
+
+    @Autowired
+    private AttendanceCorrectionRepository attendanceCorrectionRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    private UserInfo manager;
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private AttendanceCorrection attendanceCorrection;
+
+    @BeforeEach
+    public void setUp() {
+        manager = new UserInfo();
+        manager.setFirstName("Manager");
+        manager.setLastName("One");
+        manager.setAddress("123 Manager St");
+        manager.setSalary(80000.0f);
+        manager.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        manager = userInfoRepository.save(manager);
+
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        userInfo.setManager(manager);
+        userInfo = userInfoRepository.save(userInfo);
+
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+        userLogin = userLoginRepository.save(userLogin);
+
+        attendanceCorrection = new AttendanceCorrection();
+        attendanceCorrection.setUserLogin(userLogin);
+        attendanceCorrection.setCorrectionReason("Incorrect check-in time");
+        attendanceCorrection.setStatus("Pending");
+        attendanceCorrection = attendanceCorrectionRepository.save(attendanceCorrection);
+    }
+
+    @Test
+    public void testFindByUserLogin() {
+        List<AttendanceCorrection> corrections = attendanceCorrectionRepository.findByUserLogin(userLogin);
+        assertThat(corrections).isNotEmpty();
+        assertThat(corrections.get(0).getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testFindByUserLogin_UserInfo_Manager() {
+        List<AttendanceCorrection> corrections = attendanceCorrectionRepository.findByUserLogin_UserInfo_Manager(manager);
+        assertThat(corrections).isNotEmpty();
+        assertThat(corrections.get(0).getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testFindByUserLogin_UserInfo_ManagerAndStatusNot() {
+        Optional<AttendanceCorrection> correction = attendanceCorrectionRepository.findByUserLogin_UserInfo_ManagerAndStatusNot(manager, "Approved");
+        assertThat(correction).isPresent();
+        assertThat(correction.get().getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+}

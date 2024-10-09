@@ -1,0 +1,21 @@
+package com.attendencemanagementsystem.service;
+
+import com.attendencemanagementsystem.dto.UserLoginDto;
+
+//public interface UserLoginService {
+//    UserLoginDto createUserLogin(UserLoginDto userLoginDto);
+//    UserLoginDto getUserLoginById(String loginId);
+//    UserLoginDto updateUserLogin(String loginId, UserLoginDto userLoginDto);
+//    void deleteUserLogin(String loginId);
+//}
+
+
+public interface UserLoginService {
+    UserLoginDto createUserLogin(UserLoginDto userLoginDto);
+    UserLoginDto getUserLoginById(String loginId);
+    UserLoginDto updateUserLogin(String loginId, UserLoginDto userLoginDto);
+    void deleteUserLogin(String loginId);
+    UserLoginDto login(UserLoginDto userLoginDto);
+    public UserLoginDto login1(UserLoginDto userLoginDto);
+    public boolean emailExists(String email);
+}

@@ -1,0 +1,84 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ContextConfiguration;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@SpringBootTest
+@ContextConfiguration(classes = {UserInfoServiceTest.Config.class})
+public class UserInfoServiceTest {
+
+    @Mock
+    private UserInfoRepository userInfoRepository;
+
+    @InjectMocks
+    private UserInfoServiceImpl userInfoService;
+    @Configuration
+    static class Config {
+        @Bean
+        public ModelMapper modelMapper() {
+            return new ModelMapper();
+        }
+    }
+    @Test
+    public void testCreateUserInfo() {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("1");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        when(userInfoRepository.save(any(UserInfo.class))).thenReturn(userInfo);
+
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setFirstName("John");
+        userInfoDto.setLastName("Doe");
+
+        UserInfoDto createdUserInfo = userInfoService.createUserInfo(userInfoDto);
+        assertEquals("John", createdUserInfo.getFirstName());
+        assertEquals("Doe", createdUserInfo.getLastName());
+    }
+
+    @Test
+    public void testGetUserInfoById() {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("1");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        when(userInfoRepository.findById("1")).thenReturn(Optional.of(userInfo));
+
+        UserInfoDto userInfoDto = userInfoService.getUserInfoById("1");
+        assertEquals("John", userInfoDto.getFirstName());
+        assertEquals("Doe", userInfoDto.getLastName());
+    }
+
+
+
+    @Test
+    public void testDeleteUserInfo() {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId("1");
+
+        when(userInfoRepository.findById("1")).thenReturn(Optional.of(userInfo));
+        Mockito.doNothing().when(userInfoRepository).delete(userInfo);
+
+        userInfoService.deleteUserInfo("1");
+        Mockito.verify(userInfoRepository, Mockito.times(1)).delete(userInfo);
+    }
+}

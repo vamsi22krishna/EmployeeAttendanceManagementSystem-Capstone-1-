@@ -1,0 +1,137 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.AttendanceCorrectionDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.AttendanceCorrectionRepository;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.AttendanceCorrectionService;
+
+@Service
+@Transactional
+public class AttendanceCorrectionServiceImpl implements AttendanceCorrectionService {
+
+    @Autowired
+    private AttendanceCorrectionRepository attendanceCorrectionRepository;
+    
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+    
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public AttendanceCorrectionDto createAttendanceCorrection(AttendanceCorrectionDto attendanceCorrectionDto) {
+        AttendanceCorrection attendanceCorrection = modelMapper.map(attendanceCorrectionDto, AttendanceCorrection.class);
+        attendanceCorrection = attendanceCorrectionRepository.save(attendanceCorrection);
+        return modelMapper.map(attendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public AttendanceCorrectionDto getAttendanceCorrectionById(String correctionId) {
+        AttendanceCorrection attendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        return modelMapper.map(attendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public AttendanceCorrectionDto updateAttendanceCorrection(String correctionId, AttendanceCorrectionDto attendanceCorrectionDto) {
+        AttendanceCorrection existingAttendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        
+        modelMapper.map(attendanceCorrectionDto, existingAttendanceCorrection);
+        existingAttendanceCorrection = attendanceCorrectionRepository.save(existingAttendanceCorrection);
+        return modelMapper.map(existingAttendanceCorrection, AttendanceCorrectionDto.class);
+    }
+
+    @Override
+    public void deleteAttendanceCorrection(String correctionId) {
+        AttendanceCorrection attendanceCorrection = attendanceCorrectionRepository.findById(correctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance correction not found with id: " + correctionId));
+        attendanceCorrectionRepository.delete(attendanceCorrection);
+    }
+
+    
+    @Override
+    public List<AttendanceCorrectionDto> getCorrectionsByUser(UserLogin userLogin) {
+        return attendanceCorrectionRepository.findByUserLogin(userLogin).stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+
+	@Override
+	  public AttendanceCorrectionDto saveCorrection(AttendanceCorrectionDto correctionDTO) {
+        AttendanceCorrection correction = new AttendanceCorrection();
+        Optional<UserLogin> userLogin = userLoginRepository.findById(correctionDTO.getLoginId());
+        Optional<Attendance> attendance = attendanceRepository.findById(correctionDTO.getAttendanceId());
+        
+        if (userLogin.isPresent() && attendance.isPresent()) {
+            correction.setUserLogin(userLogin.get());
+            correction.setAttendance(attendance.get());
+            correction.setCorrectionReason(correctionDTO.getCorrectionReason());
+            correction.setStatus("Pending");
+            return convertToDTO(attendanceCorrectionRepository.save(correction));
+        } else {
+            throw new ResourceNotFoundException("UserLogin or Attendance not found");
+        }
+    }
+
+	public AttendanceCorrectionDto updateCorrectionStatus(String correctionId, String status) {
+        AttendanceCorrection correction = attendanceCorrectionRepository.findById(correctionId).orElseThrow();
+        correction.setStatus(status);
+        Attendance attendance = correction.getAttendance();
+        if (status.equals("Approved")) {
+            attendance.setStatus("AP");
+        } else if (status.equals("Rejected")) {
+            attendance.setStatus("RJ");
+        }
+        attendanceRepository.save(attendance);
+        return convertToDTO(attendanceCorrectionRepository.save(correction));
+    }
+	
+	
+	private AttendanceCorrectionDto convertToDTO(AttendanceCorrection correction) {
+        AttendanceCorrectionDto dto = new AttendanceCorrectionDto();
+        dto.setCorrectionId(correction.getCorrectionId());
+        dto.setLoginId(correction.getUserLogin().getLoginId());
+        dto.setAttendanceId(correction.getAttendance().getAttendanceId());
+        dto.setCorrectionReason(correction.getCorrectionReason());
+        dto.setStatus(correction.getStatus());
+        return dto;
+    }
+	
+	 public List<AttendanceCorrectionDto> getCorrectionsForManager(String managerId) {
+	        UserInfo manager = userInfoRepository.findById(managerId).orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+	        List<AttendanceCorrection> corrections = attendanceCorrectionRepository.findByUserLogin_UserInfo_Manager(manager);
+	        return corrections.stream().map(this::convertToDTO).collect(Collectors.toList());
+	    }
+	 
+//	  public void updateCorrectionStatus(CorrectionStatusUpdateDto request) {
+//	        AttendanceCorrection correction = attendanceCorrectionRepository.findById(request.getCorrectionId())
+//	                .orElseThrow(() -> new RuntimeException("Correction request not found"));
+//	        correction.setStatus(request.getStatus());
+//	        attendanceCorrectionRepository.save(correction);
+//	    }
+
+
+}

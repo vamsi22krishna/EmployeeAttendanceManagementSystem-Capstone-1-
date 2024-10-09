@@ -1,0 +1,9 @@
+package com.attendencemanagementsystem.service;
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.AttendanceReportDto;
+
+public interface AttendanceReportService {
+	 public List<AttendanceReportDto> generateAttendanceReport(int year, int month)
+}

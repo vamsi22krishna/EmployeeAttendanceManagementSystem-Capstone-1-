@@ -1,0 +1,185 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+
+import com.attendencemanagementsystem.dto.AttendanceCorrectionDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.AttendanceCorrection;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.AttendanceCorrectionRepository;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+
+public class AttendanceCorrectionServiceImplTest {
+
+    @InjectMocks
+    private AttendanceCorrectionServiceImpl attendanceCorrectionService;
+
+    @Mock
+    private AttendanceCorrectionRepository attendanceCorrectionRepository;
+
+    @Mock
+    private AttendanceRepository attendanceRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private UserInfoRepository userInfoRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private AttendanceCorrection attendanceCorrection;
+    private AttendanceCorrectionDto attendanceCorrectionDto;
+    private UserLogin userLogin;
+    private UserInfo userInfo;
+    private Attendance attendance;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        userInfo = new UserInfo();
+        userInfo.setUserId("UI123");
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+
+        userLogin = new UserLogin();
+        userLogin.setLoginId("UL123");
+        userLogin.setUserInfo(userInfo);
+
+        attendance = new Attendance();
+        attendance.setAttendanceId("AT123");
+
+        attendanceCorrection = new AttendanceCorrection();
+        attendanceCorrection.setCorrectionId("AC123");
+        attendanceCorrection.setUserLogin(userLogin);
+        attendanceCorrection.setAttendance(attendance);
+        attendanceCorrection.setCorrectionReason("Incorrect check-in time");
+        attendanceCorrection.setStatus("Pending");
+
+        attendanceCorrectionDto = new AttendanceCorrectionDto();
+        attendanceCorrectionDto.setCorrectionId("AC123");
+        attendanceCorrectionDto.setLoginId("UL123");
+        attendanceCorrectionDto.setAttendanceId("AT123");
+        attendanceCorrectionDto.setCorrectionReason("Incorrect check-in time");
+        attendanceCorrectionDto.setStatus("Pending");
+    }
+
+    @Test
+    public void testCreateAttendanceCorrection() {
+        when(modelMapper.map(any(AttendanceCorrectionDto.class), eq(AttendanceCorrection.class))).thenReturn(attendanceCorrection);
+        when(attendanceCorrectionRepository.save(any(AttendanceCorrection.class))).thenReturn(attendanceCorrection);
+        when(modelMapper.map(any(AttendanceCorrection.class), eq(AttendanceCorrectionDto.class))).thenReturn(attendanceCorrectionDto);
+
+        AttendanceCorrectionDto createdCorrection = attendanceCorrectionService.createAttendanceCorrection(attendanceCorrectionDto);
+
+        assertThat(createdCorrection).isNotNull();
+        assertThat(createdCorrection.getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testGetAttendanceCorrectionById() {
+        when(attendanceCorrectionRepository.findById("AC123")).thenReturn(Optional.of(attendanceCorrection));
+        when(modelMapper.map(any(AttendanceCorrection.class), eq(AttendanceCorrectionDto.class))).thenReturn(attendanceCorrectionDto);
+
+        AttendanceCorrectionDto foundCorrection = attendanceCorrectionService.getAttendanceCorrectionById("AC123");
+
+        assertThat(foundCorrection).isNotNull();
+        assertThat(foundCorrection.getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testUpdateAttendanceCorrection() {
+        when(attendanceCorrectionRepository.findById("AC123")).thenReturn(Optional.of(attendanceCorrection));
+        when(attendanceCorrectionRepository.save(any(AttendanceCorrection.class))).thenReturn(attendanceCorrection);
+        when(modelMapper.map(any(AttendanceCorrection.class), eq(AttendanceCorrectionDto.class))).thenReturn(attendanceCorrectionDto);
+
+        AttendanceCorrectionDto updatedCorrection = attendanceCorrectionService.updateAttendanceCorrection("AC123", attendanceCorrectionDto);
+
+        assertThat(updatedCorrection).isNotNull();
+        assertThat(updatedCorrection.getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testDeleteAttendanceCorrection() {
+        when(attendanceCorrectionRepository.findById("AC123")).thenReturn(Optional.of(attendanceCorrection));
+        doNothing().when(attendanceCorrectionRepository).delete(attendanceCorrection);
+
+        attendanceCorrectionService.deleteAttendanceCorrection("AC123");
+
+        verify(attendanceCorrectionRepository, times(1)).delete(attendanceCorrection);
+    }
+
+    @Test
+    public void testGetCorrectionsByUser() {
+        when(attendanceCorrectionRepository.findByUserLogin(userLogin)).thenReturn(List.of(attendanceCorrection));
+
+        List<AttendanceCorrectionDto> corrections = attendanceCorrectionService.getCorrectionsByUser(userLogin);
+
+        assertThat(corrections).isNotEmpty();
+        assertThat(corrections.get(0).getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testSaveCorrection() {
+        when(userLoginRepository.findById("UL123")).thenReturn(Optional.of(userLogin));
+        when(attendanceRepository.findById("AT123")).thenReturn(Optional.of(attendance));
+        when(attendanceCorrectionRepository.save(any(AttendanceCorrection.class))).thenReturn(attendanceCorrection);
+
+        AttendanceCorrectionDto savedCorrection = attendanceCorrectionService.saveCorrection(attendanceCorrectionDto);
+
+        assertThat(savedCorrection).isNotNull();
+        assertThat(savedCorrection.getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testUpdateCorrectionStatus() {
+        when(attendanceCorrectionRepository.findById("AC123")).thenReturn(Optional.of(attendanceCorrection));
+        when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(attendanceCorrectionRepository.save(any(AttendanceCorrection.class))).thenReturn(attendanceCorrection);
+
+        AttendanceCorrectionDto updatedCorrection = attendanceCorrectionService.updateCorrectionStatus("AC123", "Approved");
+
+        assertThat(updatedCorrection).isNotNull();
+        assertThat(updatedCorrection.getStatus()).isEqualTo("Approved");
+    }
+
+    @Test
+    public void testGetCorrectionsForManager() {
+        when(userInfoRepository.findById("UI123")).thenReturn(Optional.of(userInfo));
+        when(attendanceCorrectionRepository.findByUserLogin_UserInfo_Manager(userInfo)).thenReturn(List.of(attendanceCorrection));
+
+        List<AttendanceCorrectionDto> corrections = attendanceCorrectionService.getCorrectionsForManager("UI123");
+
+        assertThat(corrections).isNotEmpty();
+        assertThat(corrections.get(0).getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+
+    @Test
+    public void testGetCorrectionHistoryForManager() {
+        when(userInfoRepository.findById("UI123")).thenReturn(Optional.of(userInfo));
+        when(attendanceCorrectionRepository.findByUserLogin_UserInfo_ManagerAndStatusNot(userInfo, "Pending")).thenReturn(List.of(attendanceCorrection));
+
+        List<AttendanceCorrectionDto> corrections = attendanceCorrectionService.getCorrectionHistoryForManager("UI123");
+
+        assertThat(corrections).isNotEmpty();
+        assertThat(corrections.get(0).getCorrectionReason()).isEqualTo("Incorrect check-in time");
+    }
+}

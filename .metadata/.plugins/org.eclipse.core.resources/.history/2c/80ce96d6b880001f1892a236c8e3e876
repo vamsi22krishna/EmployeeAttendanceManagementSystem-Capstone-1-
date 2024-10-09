@@ -1,0 +1,204 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveRequest;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveRequestRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.LeaveRequestService;
+
+@Service
+//@Transactional
+public class LeaveRequestServiceImpl implements LeaveRequestService {
+
+	@Autowired
+	private LeaveRequestRepository leaveRequestRepository;
+	
+	 @Autowired
+	    private LeaveTypesRepository leaveTypesRepository;
+
+	@Autowired
+	private ModelMapper modelMapper;
+	
+	
+	 @Autowired
+	    private LeaveBalanceRepository leaveBalanceRepository;
+	 
+	 @Autowired
+	    private UserLoginRepository userLoginRepository;
+	 
+
+//	    public LeaveRequestDto submitLeaveRequest(LeaveRequestDto leaveRequestDto) {
+//	        UserLogin userLogin = userLoginRepository.findById(leaveRequestDto.getLoginId())
+//	                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//	        LeaveRequest leaveRequest = new LeaveRequest();
+//	        leaveRequest.setUserLogin(userLogin);
+//	        leaveRequest.setLeaveType(new LeaveTypes(leaveRequestDto.getLeaveTypeId())); // Assuming LeaveTypes entity exists
+//	        
+//	        leaveRequest.setStartDate(leaveRequestDto.getStartDate());
+//	        leaveRequest.setEndDate(leaveRequestDto.getEndDate());
+//	   //     leaveRequest.setHalfDay(leaveRequestDto.getHalfDay());
+//	        leaveRequest.setReason(leaveRequestDto.getReason());
+//	        leaveRequest.setStatus("Pending");
+//
+//	        LeaveRequest savedLeaveRequest = leaveRequestRepository.save(leaveRequest);
+//	        return convertToDto(savedLeaveRequest);
+//	    }
+	 public LeaveRequest submitLeaveRequest(LeaveRequestDto leaveRequestDTO, String loginId) {
+	        UserLogin userLogin = userLoginRepository.findById(loginId)
+	                .orElseThrow(() -> new RuntimeException("User not found"));
+
+	        LeaveTypes leaveType = leaveTypesRepository.findById(leaveRequestDTO.getLeaveTypeId())
+	                .orElseThrow(() -> new RuntimeException("Leave type not found"));
+
+	        LeaveBalance leaveBalance = leaveBalanceRepository.findByUserLoginAndLeaveType(userLogin, leaveType)
+	                .orElseThrow(() -> new RuntimeException("Leave balance not found"));
+	        
+	        LeaveRequest leaveRequest = new LeaveRequest();
+	        leaveRequest.setUserLogin(userLogin);
+	        leaveRequest.setLeaveType(leaveType);
+	        leaveRequest.setStartDate(leaveRequestDTO.getStartDate());
+	        leaveRequest.setEndDate(leaveRequestDTO.getEndDate());
+	        leaveRequest.setStartSession(leaveRequestDTO.getStartSession());
+	        leaveRequest.setEndSession(leaveRequestDTO.getEndSession());
+	        leaveRequest.setReason(leaveRequestDTO.getReason());
+	        leaveRequest.setStatus(leaveRequestDTO.getStatus() != null ? leaveRequestDTO.getStatus() : "Pending");
+
+	        leaveRequest.prePersistAndUpdate(); // Generate ID and calculate number of leaves
+	        if (leaveRequest.getNumberOfLeaves() > (leaveBalance.getTotalLeaves() - leaveBalance.getUsedLeaves())) {
+	            throw new RuntimeException("Not enough leave balance");
+	        }
+//	        System.out.println("==============================================");
+//	        System.out.println(leaveRequest.getLeaveId());
+	        return leaveRequestRepository.save(leaveRequest);
+	    }
+	
+	    public List<LeaveRequestDto> getLeaveRequestsByUser(String loginId) {
+	        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_LoginId(loginId);
+	        return leaveRequests.stream().map(this::convertToDto).collect(Collectors.toList());
+	    }
+
+	    public List<LeaveRequestDto> getLeaveRequestsByManager(String managerId) {
+	        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_Manager_UserId(managerId);
+	        return leaveRequests.stream().map(this::convertToDto).collect(Collectors.toList());
+	    }
+
+//	    public LeaveRequestDto approveLeaveRequest(String leaveId) {
+//	        LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+//	                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+//	        leaveRequest.setStatus("Approved");
+//	        LeaveRequest updatedLeaveRequest = leaveRequestRepository.save(leaveRequest);
+//	        return convertToDto(updatedLeaveRequest);
+//	    }
+	    public LeaveRequest  approveLeaveRequest(String leaveId) {
+	    	 
+	    	  
+	        LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+	                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+//	        if (!"Pending".equals(leaveRequest.getStatus())) {
+//	            throw new RuntimeException("Leave request is not in pending status");
+//	        }
+
+
+	        leaveRequest.setStatus("Approved");
+	        leaveRequestRepository.save(leaveRequest);
+	        
+	        LeaveBalance leaveBalance = leaveBalanceRepository.findByUserLogin_LoginIdAndLeaveType_LeaveTypeId(
+	                leaveRequest.getUserLogin().getLoginId(), leaveRequest.getLeaveType().getLeaveTypeId())
+	                .orElseThrow(() -> new RuntimeException("Leave balance not found"));
+	        
+	        
+	        leaveBalance.setUsedLeaves(leaveBalance.getUsedLeaves() +  leaveRequest.getNumberOfLeaves());
+	        System.out.println("============================================== approved");
+	    	  System.out.println(leaveBalance.getUsedLeaves() +  leaveRequest.getNumberOfLeaves());
+	        
+	       
+	        leaveBalanceRepository.save(leaveBalance);
+	       return leaveRequest;
+	    }
+//	    public LeaveRequestDto rejectLeaveRequest(String leaveId) {
+//	        LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+//	                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+//	        leaveRequest.setStatus("Rejected");
+//	        LeaveRequest updatedLeaveRequest = leaveRequestRepository.save(leaveRequest);
+//	        return convertToDto(updatedLeaveRequest);
+//	    }
+	    public void rejectLeaveRequest(String leaveId) {
+	        LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+	                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+	        leaveRequest.setStatus("Rejected");
+	        leaveRequestRepository.save(leaveRequest);
+	    }
+	       
+
+	    private LeaveRequestDto convertToDto(LeaveRequest leaveRequest) {
+	        LeaveRequestDto dto = new LeaveRequestDto();
+	        dto.setLeaveId(leaveRequest.getLeaveId());
+	        dto.setLoginId(leaveRequest.getUserLogin().getLoginId());
+	        dto.setLeaveTypeId(leaveRequest.getLeaveType().getLeaveTypeId());
+	        dto.setStartDate(leaveRequest.getStartDate());
+	        dto.setEndDate(leaveRequest.getEndDate());
+	       // dto.setHalfDay(leaveRequest.getHalfDay());
+	        dto.setReason(leaveRequest.getReason());
+	        dto.setStatus(leaveRequest.getStatus());
+	        dto.setFirstName(leaveRequest.getUserLogin().getUserInfo().getFirstName());
+	        dto.setLastName(leaveRequest.getUserLogin().getUserInfo().getLastName());
+	        dto.setNumberOfLeaves(leaveRequest.getNumberOfLeaves());
+	        dto.setLeaveTypeName(leaveRequest.getLeaveType().getLeaveType());
+	        System.out.println(leaveRequest.getStatus());
+	      
+	        return dto;
+	    }
+	@Override
+	public LeaveRequestDto createLeaveRequest(LeaveRequestDto leaveRequestDto) {
+		LeaveRequest leaveRequest = modelMapper.map(leaveRequestDto, LeaveRequest.class);
+		leaveRequest = leaveRequestRepository.save(leaveRequest);
+		return modelMapper.map(leaveRequest, LeaveRequestDto.class);
+	}
+
+	@Override
+	public LeaveRequestDto getLeaveRequestById(String leaveId) {
+		LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+				.orElseThrow(() -> new ResourceNotFoundException("Leave request not found with id: " + leaveId));
+		return modelMapper.map(leaveRequest, LeaveRequestDto.class);
+	}
+
+	@Override
+	public LeaveRequestDto updateLeaveRequest(String leaveId, LeaveRequestDto leaveRequestDto) {
+		LeaveRequest existingLeaveRequest = leaveRequestRepository.findById(leaveId)
+				.orElseThrow(() -> new ResourceNotFoundException("Leave request not found with id: " + leaveId));
+
+		modelMapper.map(leaveRequestDto, existingLeaveRequest);
+		existingLeaveRequest = leaveRequestRepository.save(existingLeaveRequest);
+		return modelMapper.map(existingLeaveRequest, LeaveRequestDto.class);
+	}
+
+	@Override
+	public void deleteLeaveRequest(String leaveId) {
+		LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveId)
+				.orElseThrow(() -> new ResourceNotFoundException("Leave request not found with id: " + leaveId));
+		leaveRequestRepository.delete(leaveRequest);
+	}
+	public List<LeaveRequestDto> getPendingLeaveRequestsByManager(String managerId) {
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findByUserLogin_UserInfo_Manager_UserId(managerId);
+        return leaveRequests.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+	
+	
+}

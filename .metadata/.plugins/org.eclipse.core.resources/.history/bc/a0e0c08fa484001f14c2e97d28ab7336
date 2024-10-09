@@ -1,0 +1,221 @@
+package com.attendencemanagementsystem.serviceImpl;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveRequest;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveRequestRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+
+public class LeaveRequestServiceImplTest {
+
+    @InjectMocks
+    private LeaveRequestServiceImpl leaveRequestService;
+
+    @Mock
+    private LeaveRequestRepository leaveRequestRepository;
+
+    @Mock
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Mock
+    private LeaveBalanceRepository leaveBalanceRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
+
+    @Mock
+    private ModelMapper modelMapper;
+
+    private LeaveRequest leaveRequest;
+    private LeaveRequestDto leaveRequestDto;
+    private UserLogin userLogin;
+    private LeaveTypes leaveType;
+    private LeaveBalance leaveBalance;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        userLogin = new UserLogin();
+        userLogin.setLoginId("UL123");
+
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveTypeId("LT123");
+        leaveType.setLeaveType("Annual Leave");
+
+        leaveBalance = new LeaveBalance();
+        leaveBalance.setUserLogin(userLogin);
+        leaveBalance.setLeaveType(leaveType);
+        leaveBalance.setTotalLeaves(30);
+        leaveBalance.setUsedLeaves(5.0);
+
+        leaveRequest = new LeaveRequest();
+        leaveRequest.setLeaveId("LR123");
+        leaveRequest.setUserLogin(userLogin);
+        leaveRequest.setLeaveType(leaveType);
+        leaveRequest.setStartDate(new Timestamp(System.currentTimeMillis()));
+        leaveRequest.setEndDate(new Timestamp(System.currentTimeMillis() + 86400000)); // 1 day later
+        leaveRequest.setStartSession("Morning");
+        leaveRequest.setEndSession("Evening");
+        leaveRequest.setStatus("Pending");
+        leaveRequest.setReason("Medical leave");
+        leaveRequest.setNumberOfLeaves(1.0);
+
+        leaveRequestDto = new LeaveRequestDto();
+        leaveRequestDto.setLeaveId("LR123");
+        leaveRequestDto.setLoginId("UL123");
+        leaveRequestDto.setLeaveTypeId("LT123");
+        leaveRequestDto.setStartDate(new Timestamp(System.currentTimeMillis()));
+        leaveRequestDto.setEndDate(new Timestamp(System.currentTimeMillis() + 86400000)); // 1 day later
+        leaveRequestDto.setStartSession("Morning");
+        leaveRequestDto.setEndSession("Evening");
+        leaveRequestDto.setStatus("Pending");
+        leaveRequestDto.setReason("Medical leave");
+        leaveRequestDto.setNumberOfLeaves(1.0);
+    }
+
+    @Test
+    public void testSubmitLeaveRequest() {
+        when(userLoginRepository.findById("UL123")).thenReturn(Optional.of(userLogin));
+        when(leaveTypesRepository.findById("LT123")).thenReturn(Optional.of(leaveType));
+        when(leaveBalanceRepository.findByUserLoginAndLeaveType(userLogin, leaveType)).thenReturn(Optional.of(leaveBalance));
+        when(leaveRequestRepository.save(any(LeaveRequest.class))).thenReturn(leaveRequest);
+
+        LeaveRequest submittedLeaveRequest = leaveRequestService.submitLeaveRequest(leaveRequestDto, "UL123");
+
+        assertThat(submittedLeaveRequest).isNotNull();
+        assertThat(submittedLeaveRequest.getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testGetLeaveRequestsByUser() {
+        when(leaveRequestRepository.findByUserLogin_LoginId("UL123")).thenReturn(List.of(leaveRequest));
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        List<LeaveRequestDto> leaveRequests = leaveRequestService.getLeaveRequestsByUser("UL123");
+
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testGetLeaveRequestsByManager() {
+        when(leaveRequestRepository.findByUserLogin_Manager_UserId("UI123")).thenReturn(List.of(leaveRequest));
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        List<LeaveRequestDto> leaveRequests = leaveRequestService.getLeaveRequestsByManager("UI123");
+
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testApproveLeaveRequest() {
+        when(leaveRequestRepository.findById("LR123")).thenReturn(Optional.of(leaveRequest));
+        when(leaveBalanceRepository.findByUserLoginAndLeaveType(userLogin, leaveType)).thenReturn(Optional.of(leaveBalance));
+        when(leaveRequestRepository.save(any(LeaveRequest.class))).thenReturn(leaveRequest);
+        when(leaveBalanceRepository.save(any(LeaveBalance.class))).thenReturn(leaveBalance);
+
+        LeaveRequest approvedLeaveRequest = leaveRequestService.approveLeaveRequest("LR123");
+
+        assertThat(approvedLeaveRequest).isNotNull();
+        assertThat(approvedLeaveRequest.getStatus()).isEqualTo("Approved");
+    }
+
+    @Test
+    public void testRejectLeaveRequest() {
+        when(leaveRequestRepository.findById("LR123")).thenReturn(Optional.of(leaveRequest));
+        when(leaveRequestRepository.save(any(LeaveRequest.class))).thenReturn(leaveRequest);
+
+        leaveRequestService.rejectLeaveRequest("LR123");
+
+        verify(leaveRequestRepository, times(1)).save(leaveRequest);
+        assertThat(leaveRequest.getStatus()).isEqualTo("Rejected");
+    }
+
+    @Test
+    public void testCreateLeaveRequest() {
+        when(modelMapper.map(any(LeaveRequestDto.class), eq(LeaveRequest.class))).thenReturn(leaveRequest);
+        when(leaveRequestRepository.save(any(LeaveRequest.class))).thenReturn(leaveRequest);
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        LeaveRequestDto createdLeaveRequest = leaveRequestService.createLeaveRequest(leaveRequestDto);
+
+        assertThat(createdLeaveRequest).isNotNull();
+        assertThat(createdLeaveRequest.getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testGetLeaveRequestById() {
+        when(leaveRequestRepository.findById("LR123")).thenReturn(Optional.of(leaveRequest));
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        LeaveRequestDto foundLeaveRequest = leaveRequestService.getLeaveRequestById("LR123");
+
+        assertThat(foundLeaveRequest).isNotNull();
+        assertThat(foundLeaveRequest.getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testUpdateLeaveRequest() {
+        when(leaveRequestRepository.findById("LR123")).thenReturn(Optional.of(leaveRequest));
+        when(leaveRequestRepository.save(any(LeaveRequest.class))).thenReturn(leaveRequest);
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        LeaveRequestDto updatedLeaveRequest = leaveRequestService.updateLeaveRequest("LR123", leaveRequestDto);
+
+        assertThat(updatedLeaveRequest).isNotNull();
+        assertThat(updatedLeaveRequest.getReason()).isEqualTo("Medical leave");
+    }
+
+    @Test
+    public void testDeleteLeaveRequest() {
+        when(leaveRequestRepository.findById("LR123")).thenReturn(Optional.of(leaveRequest));
+        doNothing().when(leaveRequestRepository).delete(leaveRequest);
+
+        leaveRequestService.deleteLeaveRequest("LR123");
+
+        verify(leaveRequestRepository, times(1)).delete(leaveRequest);
+    }
+
+    @Test
+    public void testGetPendingLeaveRequestsByManager() {
+        when(leaveRequestRepository.findByUserLogin_UserInfo_Manager_UserId("UI123")).thenReturn(List.of(leaveRequest));
+        when(modelMapper.map(any(LeaveRequest.class), eq(LeaveRequestDto.class))).thenReturn(leaveRequestDto);
+
+        List<LeaveRequestDto> leaveRequests = leaveRequestService.getPendingLeaveRequestsByManager("UI123");
+
+        assertThat(leaveRequests).isNotEmpty();
+        assertThat(leaveRequests.get(0).getReason()).isEqualTo("Medical leave");
+    }
+    @Test
+    public void testCalculateNumberOfLeaves() {
+        Timestamp startDate = new Timestamp(System.currentTimeMillis());
+        Timestamp endDate = new Timestamp(System.currentTimeMillis() + 86400000); // 1 day later
+        String startSession = "Morning";
+        String endSession = "Evening";
+
+        double numberOfLeaves = leaveRequestService.calculateNumberOfLeaves(startDate, endDate, startSession, endSession);
+
+        assertThat(numberOfLeaves).isEqualTo(1.0);
+    }
+}

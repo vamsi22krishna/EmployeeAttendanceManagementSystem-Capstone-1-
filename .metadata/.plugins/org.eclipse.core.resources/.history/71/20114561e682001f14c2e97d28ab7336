@@ -1,0 +1,44 @@
+package com.attendencemanagementsystem.entity;
+
+
+import com.attendencemanagementsystem.util.CustomPrefixIdentifierGenerator;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@AllArgsConstructor
+@Data
+@NoArgsConstructor
+@Entity
+@Table(name = "user_login")
+
+public class UserLogin {
+	@Id	   
+    private String loginId;
+
+    @Column(unique = true, nullable = true)
+    private String userEmail;
+
+    @Column(nullable = true)
+    private String password;
+    
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonBackReference
+    private UserInfo userInfo;
+    
+    @PrePersist
+    public void generateId() {
+        this.loginId = CustomPrefixIdentifierGenerator.generateId("UL");
+    }
+
+}

@@ -1,0 +1,80 @@
+package com.attendencemanagementsystem.controller;
+
+
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.service.UserRoleService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(UserRoleController.class)
+public class UserRoleControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserRoleService userRoleService;
+
+    private UserRoleDto userRoleDto;
+
+    @BeforeEach
+    public void setUp() {
+        userRoleDto = new UserRoleDto();
+        userRoleDto.setLoginId("1");
+        userRoleDto.setRole("Admin");
+    }
+
+    @Test
+    public void testCreateUserRole() throws Exception {
+        Mockito.when(userRoleService.createUserRole(Mockito.any(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        mockMvc.perform(post("/api/user-roles/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"loginId\":\"1\",\"role\":\"Admin\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId", is("1")))
+                .andExpect(jsonPath("$.role", is("Admin")));
+    }
+
+    @Test
+    public void testGetUserRoleById() throws Exception {
+        Mockito.when(userRoleService.getUserRoleById("1")).thenReturn(userRoleDto);
+
+        mockMvc.perform(get("/api/user-roles/1")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId", is("1")))
+                .andExpect(jsonPath("$.role", is("Admin")));
+    }
+
+    @Test
+    public void testUpdateUserRole() throws Exception {
+        userRoleDto.setRole("User");
+        Mockito.when(userRoleService.updateUserRole(Mockito.eq("1"), Mockito.any(UserRoleDto.class))).thenReturn(userRoleDto);
+
+        mockMvc.perform(put("/api/user-roles/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"loginId\":\"1\",\"role\":\"User\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId", is("1")))
+                .andExpect(jsonPath("$.role", is("User")));
+    }
+
+    @Test
+    public void testDeleteUserRole() throws Exception {
+        Mockito.doNothing().when(userRoleService).deleteUserRole("1");
+
+        mockMvc.perform(delete("/api/user-roles/1"))
+                .andExpect(status().isNoContent());
+    }
+}

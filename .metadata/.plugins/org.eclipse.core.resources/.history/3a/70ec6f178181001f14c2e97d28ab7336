@@ -1,0 +1,14 @@
+package com.attendencemanagementsystem.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class LeaveBalanceDto {
+    private String balanceId;
+    private String loginId;
+    private String leaveTypeId;
+    private Integer totalLeaves;
+    private double usedLeaves;
+}

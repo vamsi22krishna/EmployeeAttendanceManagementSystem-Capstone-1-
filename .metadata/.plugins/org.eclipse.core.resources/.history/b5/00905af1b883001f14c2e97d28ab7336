@@ -1,0 +1,76 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.LeaveTypesDto;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.service.LeaveTypesService;
+
+@Service
+//@Transactional
+public class LeaveTypesServiceImpl implements LeaveTypesService {
+
+    @Autowired
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public LeaveTypesDto createLeaveType(LeaveTypesDto leaveTypesDto) {
+        LeaveTypes leaveType = modelMapper.map(leaveTypesDto, LeaveTypes.class);
+        leaveType = leaveTypesRepository.save(leaveType);
+        return modelMapper.map(leaveType, LeaveTypesDto.class);
+    }
+
+    @Override
+    public LeaveTypesDto getLeaveTypeById(String leaveTypeId) {
+        LeaveTypes leaveType = leaveTypesRepository.findById(leaveTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave type not found with id: " + leaveTypeId));
+        return modelMapper.map(leaveType, LeaveTypesDto.class);
+    }
+
+//    @Override
+//    public LeaveTypesDto updateLeaveType(String leaveTypeId, LeaveTypesDto leaveTypesDto) {
+//        LeaveTypes existingLeaveType = leaveTypesRepository.findById(leaveTypeId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Leave type not found with id: " + leaveTypeId));
+//        
+//        modelMapper.map(leaveTypesDto, existingLeaveType);
+//        existingLeaveType = leaveTypesRepository.save(existingLeaveType);
+//        return modelMapper.map(existingLeaveType, LeaveTypesDto.class);
+//    }
+
+    @Override
+    public void deleteLeaveType(String leaveTypeId) {
+        LeaveTypes leaveType = leaveTypesRepository.findById(leaveTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave type not found with id: " + leaveTypeId));
+        leaveTypesRepository.delete(leaveType);
+    }
+    
+    public List<LeaveTypesDto> getAllLeaveTypes() {
+        List<LeaveTypes> leaveTypes = leaveTypesRepository.findAll();
+        return leaveTypes.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    private LeaveTypesDto convertToDto(LeaveTypes leaveTypes) {
+        LeaveTypesDto dto = new LeaveTypesDto();
+        dto.setLeaveTypeId(leaveTypes.getLeaveTypeId());
+        dto.setLeaveType((leaveTypes.getLeaveType()));
+        dto.setMaxLeaves(leaveTypes.getMaxLeaves());
+        return dto;
+    }
+
+    public boolean checkLeaveTypeExists(String leaveType) {
+        return leaveTypesRepository.existsByLeaveType(leaveType);
+    }
+}

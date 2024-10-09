@@ -1,0 +1,93 @@
+package com.attendencemanagementsystem.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+public class LeaveBalanceRepositoryTest {
+
+    @Autowired
+    private LeaveBalanceRepository leaveBalanceRepository;
+
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Autowired
+    private LeaveTypesRepository leaveTypesRepository;
+
+    private UserInfo userInfo;
+    private UserLogin userLogin;
+    private LeaveTypes leaveType;
+    private LeaveBalance leaveBalance;
+
+    @BeforeEach
+    public void setUp() {
+        userInfo = new UserInfo();
+        userInfo.setFirstName("John");
+        userInfo.setLastName("Doe");
+        userInfo.setAddress("123 Main St");
+        userInfo.setSalary(50000.0f);
+        userInfo.setDOB(new java.sql.Date(System.currentTimeMillis()));
+        userInfo = userInfoRepository.save(userInfo);
+
+        userLogin = new UserLogin();
+        userLogin.setUserEmail("john.doe@example.com");
+        userLogin.setPassword("password123");
+        userLogin.setUserInfo(userInfo);
+        userLogin = userLoginRepository.save(userLogin);
+
+        leaveType = new LeaveTypes();
+        leaveType.setLeaveType("Annual Leave");
+        leaveType.setMaxLeaves(30);
+        leaveType = leaveTypesRepository.save(leaveType);
+
+        leaveBalance = new LeaveBalance();
+        leaveBalance.setUserLogin(userLogin);
+        leaveBalance.setLeaveType(leaveType);
+        leaveBalance.setTotalLeaves(30);
+        leaveBalance.setUsedLeaves(5.0);
+        leaveBalance = leaveBalanceRepository.save(leaveBalance);
+    }
+
+    @Test
+    public void testFindByUserLoginAndLeaveType() {
+        Optional<LeaveBalance> foundLeaveBalance = leaveBalanceRepository.findByUserLoginAndLeaveType(userLogin, leaveType);
+        assertThat(foundLeaveBalance).isPresent();
+        assertThat(foundLeaveBalance.get().getTotalLeaves()).isEqualTo(30);
+        assertThat(foundLeaveBalance.get().getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    public void testFindByUserLogin_LoginIdAndLeaveType_LeaveTypeId() {
+        LeaveBalance foundLeaveBalance = leaveBalanceRepository.findByUserLogin_LoginIdAndLeaveType_LeaveTypeId(userLogin.getLoginId(), leaveType.getLeaveTypeId());
+        assertThat(foundLeaveBalance).isNotNull();
+        assertThat(foundLeaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(foundLeaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+
+    @Test
+    @Transactional
+    public void testUpdateUsedLeaves() {
+        leaveBalanceRepository.updateUsedLeaves(userLogin, leaveType, 2.0);
+        LeaveBalance updatedLeaveBalance = leaveBalanceRepository.findByUserLoginAndLeaveType(userLogin, leaveType).get();
+        assertThat(updatedLeaveBalance.getUsedLeaves()).isEqualTo(7.0);
+    }
+}

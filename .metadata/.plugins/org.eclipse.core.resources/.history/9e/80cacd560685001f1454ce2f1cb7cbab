@@ -1,0 +1,76 @@
+package com.attendencemanagementsystem.controller;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.AttendanceReportDto;
+import com.attendencemanagementsystem.service.AttendanceReportService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(AttendanceReportController.class)
+public class AttendanceReportControllerTest {
+
+    @InjectMocks
+    private AttendanceReportController attendanceReportController;
+
+    @MockBean
+    private AttendanceReportService attendanceReportService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(attendanceReportController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testGetAttendanceReport() throws Exception {
+        AttendanceReportDto reportDto = new AttendanceReportDto("UI123", "varun", "raju", 20, 10);
+
+        when(attendanceReportService.generateAttendanceReport(anyInt(), anyInt())).thenReturn(List.of(reportDto));
+
+        mockMvc.perform(get("/api/reports/attendance")
+                .param("year", "2023")
+                .param("month", "9")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value("UI123"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"))
+                .andExpect(jsonPath("$.daysPresent").value(20))
+                .andExpect(jsonPath("$.daysAbsent").value(10));
+    }
+
+    @Test
+    public void testDownloadAttendanceReportCsv() throws Exception {
+        byte[] csvData = "userId,firstName,lastName,daysPresent,daysAbsent\nUI123,John,Doe,20,10".getBytes();
+
+        when(attendanceReportService.generateAttendanceReportCsv(anyInt(), anyInt())).thenReturn(csvData);
+
+        mockMvc.perform(get("/api/reports/attendance/csv")
+                .param("year", "2023")
+                .param("month", "9")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename=attendance_report.csv"))
+                .andExpect(content().bytes(csvData));
+    }
+}

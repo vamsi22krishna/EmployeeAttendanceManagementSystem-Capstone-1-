@@ -1,0 +1,68 @@
+package com.attendencemanagementsystem.serviceImpl;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.attendencemanagementsystem.dto.UserRoleDto;
+import com.attendencemanagementsystem.entity.UserRole;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.UserRoleRepository;
+import com.attendencemanagementsystem.service.UserRoleService;
+
+@Service
+//@Transactional
+public class UserRoleServiceImpl implements UserRoleService {
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public UserRoleDto createUserRole(UserRoleDto userRoleDto) {
+        UserRole userRole = modelMapper.map(userRoleDto, UserRole.class);
+        userRole = userRoleRepository.save(userRole);
+        return modelMapper.map(userRole, UserRoleDto.class);
+    }
+
+    @Override
+    public UserRoleDto getUserRoleById(String userRoleId) {
+        UserRole userRole = userRoleRepository.findById(userRoleId)
+                .orElseThrow(() -> new ResourceNotFoundException("User role not found with id: " + userRoleId));
+        return modelMapper.map(userRole, UserRoleDto.class);
+    }
+
+    @Override
+    public UserRoleDto updateUserRole(String userRoleId, UserRoleDto userRoleDto) {
+        UserRole existingUserRole = userRoleRepository.findById(userRoleId)
+                .orElseThrow(() -> new ResourceNotFoundException("User role not found with id: " + userRoleId));
+        
+        modelMapper.map(userRoleDto, existingUserRole);
+        existingUserRole = userRoleRepository.save(existingUserRole);
+        return modelMapper.map(existingUserRole, UserRoleDto.class);
+    }
+
+    @Override
+    public void deleteUserRole(String userRoleId) {
+        UserRole userRole = userRoleRepository.findById(userRoleId)
+                .orElseThrow(() -> new ResourceNotFoundException("User role not found with id: " + userRoleId));
+        userRoleRepository.delete(userRole);
+    }
+    
+//    public List<UserRoleDto> getUserRolesByLoginId(String loginId) {
+//        List<String> roles = userRoleRepository.findByUserLogin_LoginId(loginId);
+//        return roles.stream().map(role -> new UserRoleDto()).collect(Collectors.toList());
+//    }
+//    
+    
+    public List<String> getUserRolesByLoginId(String loginId) {
+        return userRoleRepository.findByUserLogin_LoginId(loginId);
+    }
+
+    
+}

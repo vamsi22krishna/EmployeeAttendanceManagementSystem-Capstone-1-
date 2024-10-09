@@ -1,0 +1,27 @@
+package com.attendencemanagementsystem.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.sql.Timestamp;
+
+@Data
+@NoArgsConstructor
+public class AttendanceDto {
+    private String attendanceId;
+    private String loginId;
+    private Timestamp checkIn;
+    private Timestamp checkOut;
+    private Timestamp date;
+    private String status;
+    private String employeeId;
+    private String firstName;
+    private String lastName;
+    
+    public AttendanceDto(String attendanceId, String firstName, String lastName, Timestamp date, String status) {
+        this.attendanceId = attendanceId;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.date = date;
+        this.status = status;
+    }
+}

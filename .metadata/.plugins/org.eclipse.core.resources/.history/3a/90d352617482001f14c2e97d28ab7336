@@ -1,0 +1,5 @@
+package com.attendencemanagementsystem.dto;
+
+public class Attendance {
+
+}

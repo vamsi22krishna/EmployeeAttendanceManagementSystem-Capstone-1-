@@ -1,0 +1,23 @@
+package com.attendencemanagementsystem.service;
+
+
+
+import java.util.List;
+
+import com.attendencemanagementsystem.dto.LeaveTypesDto;
+
+
+public interface LeaveTypesService {
+	LeaveTypesDto createLeaveType(LeaveTypesDto leaveTypesDto);
+
+	LeaveTypesDto getLeaveTypeById(String leaveTypeId);
+
+//	LeaveTypesDto updateLeaveType(String leaveTypeId, LeaveTypesDto leaveTypesDto);
+
+	void deleteLeaveType(String leaveTypeId);
+	public List<LeaveTypesDto> getAllLeaveTypes();
+
+	boolean checkLeaveTypeExists(String leaveType);
+
+	LeaveTypesDto updateLeaveType(String leaveTypeId, LeaveTypesDto leaveTypesDto);
+}

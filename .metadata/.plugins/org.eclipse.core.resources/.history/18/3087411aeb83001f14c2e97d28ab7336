@@ -1,0 +1,94 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.attendencemanagementsystem.dto.AttendanceReportDto;
+import com.attendencemanagementsystem.entity.Attendance;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.repository.AttendanceRepository;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.service.AttendanceReportService;
+
+@Service
+public class AttendanceReportServiceImpl implements AttendanceReportService {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+//    public List<AttendanceReportDto> generateAttendanceReport() {
+//        List<UserInfo> employees = userInfoRepository.findAll();
+//        List<Attendance> attendanceRecords = attendanceRepository.findAll();
+//
+//        Map<String, List<Attendance>> attendanceByEmployee = attendanceRecords.stream()
+//        		
+//                .collect(Collectors.groupingBy(att -> att.getUserLogin().getUserInfo().getUserId()));
+//
+//        return employees.stream().map(employee -> {
+//            List<Attendance> employeeAttendance = attendanceByEmployee.getOrDefault(employee.getUserId(), List.of());
+//            long daysPresent = employeeAttendance.stream()
+//                    .filter(att -> "P".equals(att.getStatus()))
+//                    .map(att -> att.getDate().toLocalDate())
+//                    .distinct()
+//                    .count();
+//            long daysAbsent = employeeAttendance.stream()
+//                    .filter(att -> "A".equals(att.getStatus()))
+//                    .map(att -> att.getDate().toLocalDate())
+//                    .distinct()
+//                    .count();
+//            return new AttendanceReportDto(employee.getFirstName(), employee.getLastName(), daysPresent, daysAbsent);
+//        }).collect(Collectors.toList());
+//    }
+    public List<AttendanceReportDto> generateAttendanceReport(int year, int month) {
+        List<UserInfo> employees = userInfoRepository.findAll();
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        List<Attendance> attendanceRecords = attendanceRepository.findByDateBetween(startDate, endDate);
+
+        Map<String, List<Attendance>> attendanceByEmployee = attendanceRecords.stream()
+                .collect(Collectors.groupingBy(att -> att.getUserLogin().getUserInfo().getUserId()));
+
+        return employees.stream().map(employee -> {
+            List<Attendance> employeeAttendance = attendanceByEmployee.getOrDefault(employee.getUserId(), List.of());
+            long daysPresent = employeeAttendance.stream()
+                    .filter(att -> "P".equals(att.getStatus()))
+                    .map(att -> att.getDate().toLocalDate())
+                    .distinct()
+                    .count();
+            long daysAbsent = employeeAttendance.stream()
+                    .filter(att -> "A".equals(att.getStatus()))
+                    .map(att -> att.getDate().toLocalDate())
+                    .distinct()
+                    .count();
+            return new AttendanceReportDto(employee.getUserId(),employee.getFirstName(), employee.getLastName(), daysPresent, daysAbsent);
+        }).collect(Collectors.toList());
+    }
+    public byte[] generateAttendanceReportCsv(int year, int month) {
+        List<AttendanceReportDto> report = generateAttendanceReport(year, month);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintWriter writer = new PrintWriter(out);
+
+        writer.println("First Name,Last Name,Days Present,Days Absent");
+        for (AttendanceReportDto record : report) {
+            writer.printf("%s,%s,%d,%d%n", record.getFirstName(), record.getLastName(), record.getDaysPresent(), record.getDaysAbsent());
+        }
+
+        writer.flush();
+        return out.toByteArray();
+    }
+    
+}
+	

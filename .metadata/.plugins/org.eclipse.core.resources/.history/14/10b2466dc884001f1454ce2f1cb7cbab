@@ -1,0 +1,293 @@
+package com.attendencemanagementsystem.serviceImpl;
+
+
+
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.attendencemanagementsystem.dto.UserInfoDto;
+import com.attendencemanagementsystem.entity.LeaveBalance;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserInfo;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.entity.UserRole;
+import com.attendencemanagementsystem.exception.ResourceNotFoundException;
+import com.attendencemanagementsystem.repository.LeaveBalanceRepository;
+import com.attendencemanagementsystem.repository.LeaveTypesRepository;
+import com.attendencemanagementsystem.repository.UserInfoRepository;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.repository.UserRoleRepository;
+import com.attendencemanagementsystem.service.UserInfoMapper;
+import com.attendencemanagementsystem.service.UserInfoService;
+
+@Service
+//@Transactional
+public class UserInfoServiceImpl implements UserInfoService {
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+    
+    @Autowired
+    private LeaveTypesRepository leaveTypesRepository;
+
+    @Autowired
+    private LeaveBalanceRepository leaveBalanceRepository;
+    
+    @Autowired
+    private UserLoginRepository userLoginRepository;
+    
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+
+    @Override
+    public UserInfoDto createHrInfo(UserInfoDto userInfoDto) {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setFirstName(userInfoDto.getFirstName());
+        userInfo.setLastName(userInfoDto.getLastName());
+        userInfo.setAddress(userInfoDto.getAddress());
+        userInfo.setSalary(userInfoDto.getSalary());
+        userInfo.setDOB(userInfoDto.getDOB());
+        
+     // Set managerId statically
+        UserInfo manager = userInfoRepository.findById("UI1000").orElse(null);
+        if (manager != null) {
+            userInfo.setManager(manager);
+        } else {
+            System.out.println("Static Manager not found for ID: UI9560");
+        }
+
+        userInfo = userInfoRepository.save(userInfo);
+        return convertToDto(userInfo);
+    }
+  
+    @Override
+    public UserInfoDto createUserInfo(UserInfoDto userInfoDto) {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setFirstName(userInfoDto.getFirstName());
+        userInfo.setLastName(userInfoDto.getLastName());
+        userInfo.setAddress(userInfoDto.getAddress());
+        userInfo.setSalary(userInfoDto.getSalary());
+        userInfo.setDOB(userInfoDto.getDOB());
+       
+//         userInfo.setManager(userInfoDto.getManagerId());
+        if (userInfoDto.getManagerId() != null) {
+            UserInfo manager = userInfoRepository.findById(userInfoDto.getManagerId()).orElse(null);
+            if (manager != null) {
+                userInfo.setManager(manager);
+            }
+            
+
+        }
+
+        userInfo = userInfoRepository.save(userInfo);
+        return convertToDto(userInfo);
+    }
+    
+
+    @Override
+    public UserInfoDto getUserInfoById(String userId) {
+        UserInfo userInfo = userInfoRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User info not found with id: " + userId));
+        return modelMapper.map(userInfo, UserInfoDto.class);
+    }
+
+    @Override
+    public UserInfoDto updateUserInfo(String userId, UserInfoDto userInfoDto) {
+        UserInfo existingUserInfo = userInfoRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User info not found with id: " + userId));
+        
+        modelMapper.map(userInfoDto, existingUserInfo);
+        existingUserInfo = userInfoRepository.save(existingUserInfo);
+        return modelMapper.map(existingUserInfo, UserInfoDto.class);
+    }
+
+    @Override
+    public void deleteUserInfo(String userId) {
+        UserInfo userInfo = userInfoRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User info not found with id: " + userId));
+        userInfoRepository.delete(userInfo);
+    }
+    public UserInfoDto getUserProfile(String loginId) {
+        // Fetch the UserLogin object using loginId
+        Optional<UserLogin> userLoginOpt = userLoginRepository.findById(loginId);
+        if (!userLoginOpt.isPresent()) {
+            throw new ResourceNotFoundException("User not found");
+        }
+        UserLogin userLogin = userLoginOpt.get();
+        String userId = userLogin.getUserInfo().getUserId();
+
+        // Fetch the UserProfile object using userId
+        UserInfo userProfile = userInfoRepository.findByUserId(userId);
+        UserInfoDto userInfoDto = modelMapper.map(userProfile, UserInfoDto.class);
+        userInfoDto.setUserEmail(userLogin.getUserEmail()); // Set the userEmail from UserLogin
+        return userInfoDto;
+    }
+    
+    
+    
+    public UserInfoDto getUserInfoByEmail(String userEmail) {
+        UserInfo userInfo = userInfoRepository.findByUserEmail(userEmail);
+        return convertToDto(userInfo);
+    }
+
+    // Method to convert UserInfo entity to UserInfoDto
+    private UserInfoDto convertToDto(UserInfo userInfo) {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setUserId(userInfo.getUserId());
+        userInfoDto.setFirstName(userInfo.getFirstName());
+        userInfoDto.setLastName(userInfo.getLastName());
+        userInfoDto.setAddress(userInfo.getAddress());
+        userInfoDto.setSalary(userInfo.getSalary());
+        userInfoDto.setDOB(userInfo.getDOB());
+        userInfoDto.setManagerId(userInfo.getManager() != null ? userInfo.getManager().getUserId() : null);
+        
+       
+        return userInfoDto;
+    }
+    
+    public List<UserInfoDto> getAllUsers() {
+        List<UserInfo> users = userInfoRepository.findAll();
+        return users.stream().map(user -> new UserInfoDto()).collect(Collectors.toList());
+    }
+    
+    @Override
+    public UserInfoDto createUserInfo1(UserInfoDto userInfoDto) {
+        UserInfo userInfo = modelMapper.map(userInfoDto, UserInfo.class);
+        
+        // Save userInfo without setting the manager first
+        userInfo = userInfoRepository.save(userInfo);
+
+        // If managerId is provided, set the manager and update userInfo
+        if (userInfoDto.getManagerId() != null) {
+            UserInfo manager = userInfoRepository.findById(userInfoDto.getManagerId()).orElse(null);
+            if (manager != null) {
+                userInfo.setManager(manager);
+                userInfo = userInfoRepository.save(userInfo); // Update userInfo with manager
+            }
+        }
+
+        return modelMapper.map(userInfo, UserInfoDto.class);
+    }
+
+//    @Override
+//    public List<UserInfoDto> getAllManagers() {
+////        return userInfoRepository.findAll().stream()
+////                .filter(user -> user.getManager() == null)
+////                .collect(Collectors.toList());
+//    	  return userInfoRepository.findAllManagers().stream()
+//    	            .map(user -> new UserInfoDto(user.getUserId(), user.getFirstName(), user.getLastName()))
+//    	            .collect(Collectors.toList());
+    //}
+    @Override
+    public List<UserInfoDto> getAllManagers() {
+        return userInfoRepository.findAllManagers().stream()
+            .map(UserInfoMapper.INSTANCE::userInfoToUserInfoDto)
+            .collect(Collectors.toList());
+    }
+    
+    
+    public UserInfo addEmployee(UserInfoDto userInfoDTO) {
+        // Convert DTO to Entity
+        UserInfo userInfo = new UserInfo();
+        userInfo.setFirstName(userInfoDTO.getFirstName());
+        userInfo.setLastName(userInfoDTO.getLastName());
+        userInfo.setAddress(userInfoDTO.getAddress());
+        userInfo.setSalary(userInfoDTO.getSalary());
+        userInfo.setDOB(userInfoDTO.getDOB());
+        
+        // If managerId is provided, fetch the manager and set
+        if (userInfoDTO.getManagerId() != null) {
+            UserInfo manager = userInfoRepository.findById(userInfoDTO.getManagerId()).orElse(null);
+            userInfo.setManager(manager);
+        }
+
+        // Save the user info
+        UserInfo savedUser = userInfoRepository.save(userInfo);
+
+
+
+        return savedUser;
+    }
+    
+    public List<UserInfoDto> getManagers() {
+        List<UserRole> managerRoles = userRoleRepository.findByRole("Manager");
+        return managerRoles.stream()
+                .map(UserRole::getUserLogin)
+               
+                
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    public List<UserInfoDto> getHRs() {
+        List<UserRole> hrRoles = userRoleRepository.findByRole("HR");
+        return hrRoles.stream()
+                .map(UserRole::getUserLogin)
+               
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    private UserInfoDto convertToDto(UserLogin userLogin) {
+        UserInfoDto dto = new UserInfoDto();
+        UserInfo userInfo = userLogin.getUserInfo();
+        dto.setUserId(userInfo.getUserId());
+        dto.setFirstName(userInfo.getFirstName());
+        dto.setLastName(userInfo.getLastName());
+        dto.setUserEmail(userLogin.getUserEmail()); // Fetch email from UserLogin
+        return dto;
+    }
+}
+
+//@Override
+//public UserInfoDto createUserInfo(UserInfoDto userInfoDto) {
+//  UserInfo userInfo = modelMapper.map(userInfoDto, UserInfo.class);
+//  userInfo = userInfoRepository.save(userInfo);
+//  return modelMapper.map(userInfo, UserInfoDto.class);
+//}
+
+// Convert the date from String to java.sql.Date
+//if (userInfoDto.getDOB() != null) {
+//  userInfo.setDOB(Date.valueOf(userInfoDto.getDOB()));
+//}
+
+// Fetch and set the manager entity if managerId is provided
+//public UserInfoDto createUserInfo(UserInfoDto userInfoDto) {
+//UserInfo userInfo = new UserInfo();
+//userInfo.setFirstName(userInfoDto.getFirstName());
+//userInfo.setLastName(userInfoDto.getLastName());
+//userInfo.setAddress(userInfoDto.getAddress());
+//userInfo.setSalary(userInfoDto.getSalary());
+//userInfo.setDOB(Date.valueOf(userInfoDto.getDOB())); // Ensure date is correctly formatted
+//userInfo.setManager(userInfoRepository.findById(userInfoDto.getManagerId()).orElse(null));
+//userInfo = userInfoRepository.save(userInfo);
+//return convertToDto(userInfo);
+//}
+
+
+//// Create User Login
+//UserLogin userLogin = new UserLogin();
+//userLogin.setUserEmail(savedUser.getFirstName().toLowerCase() + "." + savedUser.getLastName().toLowerCase() + "@company.com");
+//userLogin.setPassword("default_password"); // Ideally, use a proper password hashing
+//userLogin.setUserInfo(savedUser);
+//userLoginRepository.save(userLogin);
+
+// Fetch all leave types and create leave balances
+//List<LeaveTypes> leaveTypes = leaveTypesRepository.findAll();
+//leaveTypes.forEach(leaveType -> {
+//  LeaveBalance leaveBalance = new LeaveBalance();
+//  leaveBalance.setUserLogin(userLogin);
+//  leaveBalance.setLeaveType(leaveType);
+//  leaveBalance.setTotalLeaves(leaveType.getMaxLeaves());
+//  leaveBalanceRepository.save(leaveBalance);
+//});

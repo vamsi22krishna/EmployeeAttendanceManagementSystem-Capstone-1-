@@ -1,0 +1,42 @@
+package com.attendencemanagementsystem.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+@SpringBootTest
+public class LeaveBalanceTest {
+
+    private LeaveBalance leaveBalance;
+
+    @MockBean
+    private UserLogin userLogin;
+
+    @MockBean
+    private LeaveTypes leaveType;
+
+    @BeforeEach
+    public void setUp() {
+        leaveBalance = new LeaveBalance();
+        leaveBalance.setUserLogin(userLogin);
+        leaveBalance.setLeaveType(leaveType);
+        leaveBalance.setTotalLeaves(30);
+        leaveBalance.setUsedLeaves(5.0);
+    }
+
+    @Test
+    public void testGenerateId() {
+        leaveBalance.generateId();
+        assertThat(leaveBalance.getBalanceId()).isNotNull();
+        assertThat(leaveBalance.getBalanceId()).startsWith("LB");
+    }
+
+    @Test
+    public void testLeaveBalanceFields() {
+        assertThat(leaveBalance.getUserLogin()).isEqualTo(userLogin);
+        assertThat(leaveBalance.getLeaveType()).isEqualTo(leaveType);
+        assertThat(leaveBalance.getTotalLeaves()).isEqualTo(30);
+        assertThat(leaveBalance.getUsedLeaves()).isEqualTo(5.0);
+    }
+}

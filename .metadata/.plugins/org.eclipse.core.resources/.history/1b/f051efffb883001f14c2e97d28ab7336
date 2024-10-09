@@ -1,0 +1,11 @@
+package com.attendencemanagementsystem.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.attendencemanagementsystem.entity.LeaveTypes;
+
+public interface LeaveTypesRepository extends JpaRepository<LeaveTypes, String> {
+
+	boolean existsByLeaveType(String leaveType);
+}
+

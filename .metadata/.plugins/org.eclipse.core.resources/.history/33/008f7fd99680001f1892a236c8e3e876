@@ -1,0 +1,56 @@
+package com.attendencemanagementsystem.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.LeaveRequestService;
+
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/manager")
+public class ManagerController {
+	
+	 @Autowired
+	    private UserLoginRepository userLoginRepository;
+
+    @Autowired
+    private LeaveRequestService leaveRequestService;
+
+    @GetMapping("/user-id/{loginId}")
+    public ResponseEntity<String> getManagerUserId(@PathVariable String loginId) {
+        String userId = userLoginRepository.findUserIdByLoginId(loginId);
+        return ResponseEntity.ok(userId);
+    }
+
+    
+    @GetMapping("/leave-requests/{managerId}")
+    public List<LeaveRequestDto> getPendingLeaveRequests(@PathVariable String managerId) {
+        return leaveRequestService.getPendingLeaveRequestsByManager(managerId);
+    }
+
+    @PostMapping("/approve-leave/{leaveId}")
+    public ResponseEntity<Void> approveLeaveRequest(@PathVariable String leaveId) {
+        leaveRequestService.approveLeaveRequest(leaveId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reject-leave/{leaveId}")
+    public ResponseEntity<Void> rejectLeaveRequest(@PathVariable String leaveId) {
+        leaveRequestService.rejectLeaveRequest(leaveId);
+        return ResponseEntity.ok().build();
+    }
+    
+    
+    
+}

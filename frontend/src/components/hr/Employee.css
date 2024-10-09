@@ -1,0 +1,18 @@
+.admin-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+    background-color: #f5f5f5;
+  }
+  
+  .admin-dashboard-paper {
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .admin-dashboard-button {
+    margin-top: 1rem;
+  }
+  

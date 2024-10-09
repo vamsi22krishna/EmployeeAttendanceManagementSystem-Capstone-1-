@@ -1,0 +1,115 @@
+package com.attendencemanagementsystem.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.attendencemanagementsystem.dto.LeaveRequestDto;
+import com.attendencemanagementsystem.entity.LeaveRequest;
+import com.attendencemanagementsystem.entity.LeaveTypes;
+import com.attendencemanagementsystem.entity.UserLogin;
+import com.attendencemanagementsystem.repository.UserLoginRepository;
+import com.attendencemanagementsystem.service.LeaveRequestService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(ManagerController.class)
+public class ManagerControllerTest {
+
+    @InjectMocks
+    private ManagerController managerController;
+
+    @MockBean
+    private UserLoginRepository userLoginRepository;
+
+    @MockBean
+    private LeaveRequestService leaveRequestService;
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(managerController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    public void testGetManagerUserId() throws Exception {
+        String loginId = "UL123";
+        String userId = "UI123";
+
+        when(userLoginRepository.findUserIdByLoginId(loginId)).thenReturn(userId);
+
+        mockMvc.perform(get("/api/manager/user-id/{loginId}", loginId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(userId));
+    }
+
+    @Test
+    public void testGetPendingLeaveRequests() throws Exception {
+        String managerId = "UI123";
+        LeaveRequestDto leaveRequestDto = new LeaveRequestDto();
+        leaveRequestDto.setLeaveTypeId("LT123");
+        leaveRequestDto.setLoginId("UL123");
+        leaveRequestDto.setReason("Medical leave");
+
+        when(leaveRequestService.getPendingLeaveRequestsByManager(managerId)).thenReturn(List.of(leaveRequestDto));
+
+        mockMvc.perform(get("/api/manager/leave-requests/{managerId}", managerId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaveTypeId").value("LT123"))
+                .andExpect(jsonPath("$.loginId").value("UL123"))
+                .andExpect(jsonPath("$.reason").value("Medical leave"));
+    }
+
+    @Test
+    public void testApproveLeaveRequest() throws Exception {
+        String leaveId = "LR123";
+        LeaveRequest leaveRequest = new LeaveRequest();
+        leaveRequest.setLeaveId(leaveId);
+        leaveRequest.setUserLogin(new UserLogin());
+        leaveRequest.getUserLogin().setLoginId("UL123");
+        leaveRequest.setLeaveType(new LeaveTypes());
+        leaveRequest.getLeaveType().setLeaveTypeId("LT123");
+        leaveRequest.setReason("Medical leave");
+
+        when(leaveRequestService.approveLeaveRequest(leaveId)).thenReturn(leaveRequest);
+
+        mockMvc.perform(post("/api/manager/approve-leave/{leaveId}", leaveId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaveId").value(leaveId))
+                .andExpect(jsonPath("$.userLogin.loginId").value("UL123"))
+                .andExpect(jsonPath("$.leaveType.leaveTypeId").value("LT123"))
+                .andExpect(jsonPath("$.reason").value("Medical leave"));
+    }
+
+    @Test
+    public void testRejectLeaveRequest() throws Exception {
+        String leaveId = "LR123";
+
+        doNothing().when(leaveRequestService).rejectLeaveRequest(leaveId);
+
+        mockMvc.perform(post("/api/manager/reject-leave/{leaveId}", leaveId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+}
